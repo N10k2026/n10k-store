@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/admin-auth';
 import { applyRateLimit } from '@/lib/rate-limit';
-import {
-  optimizeVideo,
-  isAllowedVideoType,
-  MAX_VIDEO_SIZE,
-} from '@/lib/media-optimizer';
+import { uploadVideoToCloudinary } from '@/lib/cloudinary';
+import { isAllowedVideoType, MAX_VIDEO_SIZE } from '@/lib/media-optimizer';
 
 export async function POST(req: NextRequest) {
   const session = await getAdminSession();
@@ -47,20 +44,21 @@ export async function POST(req: NextRequest) {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const result = await optimizeVideo(buffer, { maxWidth: 1280, crf: 28, audioBitrate: '128k' });
+    const result = await uploadVideoToCloudinary(buffer);
 
     return NextResponse.json({
       success: true,
       url: result.url,
-      size: result.size,
-      originalSize: result.originalSize,
+      publicId: result.publicId,
+      size: result.bytes,
+      originalSize: result.originalBytes,
       reductionPercent: result.reductionPercent,
-      mimeType: result.mimeType,
+      mimeType: `video/${result.format}`,
     });
   } catch (err) {
-    console.error('Video optimization error:', err);
+    console.error('Cloudinary video upload error:', err);
     return NextResponse.json(
-      { error: err instanceof Error ? `Error: ${err.message}` : 'Error al optimizar el video' },
+      { error: err instanceof Error ? `Error: ${err.message}` : 'Error al subir el video' },
       { status: 500 },
     );
   }

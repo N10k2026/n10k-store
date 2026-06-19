@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/admin-auth';
 import { applyRateLimit } from '@/lib/rate-limit';
-import {
-  optimizeImage,
-  isAllowedImageType,
-  MAX_IMAGE_SIZE,
-} from '@/lib/media-optimizer';
+import { uploadImageToCloudinary } from '@/lib/cloudinary';
+import { isAllowedImageType, MAX_IMAGE_SIZE } from '@/lib/media-optimizer';
 
 export async function POST(req: NextRequest) {
   const session = await getAdminSession();
@@ -47,18 +44,19 @@ export async function POST(req: NextRequest) {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const result = await optimizeImage(buffer, { maxWidth: 1200, quality: 82 });
+    const result = await uploadImageToCloudinary(buffer);
 
     return NextResponse.json({
       success: true,
       url: result.url,
-      size: result.size,
-      originalSize: result.originalSize,
+      publicId: result.publicId,
+      size: result.bytes,
+      originalSize: result.originalBytes,
       reductionPercent: result.reductionPercent,
-      mimeType: result.mimeType,
+      mimeType: `image/${result.format}`,
     });
   } catch (err) {
-    console.error('Image optimization error:', err);
-    return NextResponse.json({ error: 'Error al optimizar la imagen' }, { status: 500 });
+    console.error('Cloudinary image upload error:', err);
+    return NextResponse.json({ error: 'Error al subir la imagen a Cloudinary' }, { status: 500 });
   }
 }
