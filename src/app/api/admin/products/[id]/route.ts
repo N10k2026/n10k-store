@@ -34,6 +34,8 @@ export async function PUT(
     isNew,
     isBestSeller,
     sortOrder,
+    colorImages,
+    colors,
   } = body as Record<string, unknown>;
 
   // If slug is changing, ensure it stays unique
@@ -42,6 +44,52 @@ export async function PUT(
     if (clash && clash.id !== id) {
       return NextResponse.json({ error: 'El slug ya existe' }, { status: 409 });
     }
+  }
+
+  // If colorImages is provided, sync the ProductImage rows.
+  // colorImages is a Record<colorName, string[]> — replaces ALL images for
+  // the given colors. This lets the admin edit per-color image galleries.
+  let colorImagesUpdate:
+    | { deleteMany: Record<string, never>; create: { url: string; colorName: string; sortOrder: number }[] }
+    | undefined;
+  if (colorImages != null && typeof colorImages === 'object') {
+    const creates: { url: string; colorName: string; sortOrder: number }[] = [];
+    let sortOrderIdx = 0;
+    for (const [colorName, urls] of Object.entries(colorImages as Record<string, unknown>)) {
+      if (!Array.isArray(urls)) continue;
+      for (const url of urls) {
+        if (typeof url === 'string' && url.trim()) {
+          creates.push({
+            url: url.trim(),
+            colorName,
+            sortOrder: sortOrderIdx++,
+          });
+        }
+      }
+    }
+    colorImagesUpdate = {
+      deleteMany: {},
+      create: creates,
+    };
+  }
+
+  // If colors array is provided, sync the ProductColor rows.
+  let colorsUpdate:
+    | { deleteMany: Record<string, never>; create: { name: string; hex: string }[] }
+    | undefined;
+  if (Array.isArray(colors)) {
+    const colorCreates: { name: string; hex: string }[] = [];
+    for (const c of colors) {
+      if (c && typeof c === 'object' && 'name' in c) {
+        const cn = String((c as { name: unknown }).name).trim();
+        const ch = String((c as { hex: unknown }).hex || '#000000').trim();
+        if (cn) colorCreates.push({ name: cn, hex: ch });
+      }
+    }
+    colorsUpdate = {
+      deleteMany: {},
+      create: colorCreates,
+    };
   }
 
   const product = await db.product.update({
@@ -58,6 +106,8 @@ export async function PUT(
       ...(isNew != null ? { isNew: Boolean(isNew) } : {}),
       ...(isBestSeller != null ? { isBestSeller: Boolean(isBestSeller) } : {}),
       ...(sortOrder != null ? { sortOrder: Number(sortOrder) } : {}),
+      ...(colorImagesUpdate ? { images: colorImagesUpdate } : {}),
+      ...(colorsUpdate ? { colors: colorsUpdate } : {}),
     },
   });
 

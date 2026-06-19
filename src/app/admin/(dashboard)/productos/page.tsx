@@ -61,10 +61,18 @@ interface Product {
   createdAt: string;
   updatedAt: string;
   _count: { reviews: number };
+  images?: { id: string; url: string; colorName: string | null; sortOrder: number }[];
+  colors?: { id: string; name: string; hex: string }[];
 }
 
 const FILTER_CATEGORIES = ['Todos', 'Hoodies', 'Suéters', 'Franelas', 'Shorts'];
 const PRODUCT_CATEGORIES = ['Hoodies', 'Suéters', 'Franelas', 'Shorts'];
+
+interface ColorEntry {
+  name: string;
+  hex: string;
+  imageUrl: string;
+}
 
 interface FormState {
   name: string;
@@ -77,6 +85,7 @@ interface FormState {
   video: string;
   isNew: boolean;
   isBestSeller: boolean;
+  colors: ColorEntry[];
 }
 
 const EMPTY_FORM: FormState = {
@@ -90,6 +99,7 @@ const EMPTY_FORM: FormState = {
   video: '',
   isNew: false,
   isBestSeller: false,
+  colors: [],
 };
 
 function slugify(name: string): string {
@@ -179,6 +189,18 @@ export default function AdminProductsPage() {
 
   const openEdit = (p: Product) => {
     setEditingId(p.id);
+    // Build colors array from the product's colors + their images.
+    // Each color gets its first image (or the product's main image as fallback).
+    const productColors = p.colors && p.colors.length > 0
+      ? p.colors.map((c) => {
+          const colorImg = (p.images || []).find((img) => img.colorName === c.name);
+          return {
+            name: c.name,
+            hex: c.hex,
+            imageUrl: colorImg ? colorImg.url : p.image,
+          };
+        })
+      : [];
     setForm({
       name: p.name,
       slug: p.slug,
@@ -190,6 +212,7 @@ export default function AdminProductsPage() {
       video: p.video ?? '',
       isNew: p.isNew,
       isBestSeller: p.isBestSeller,
+      colors: productColors,
     });
     setDialogOpen(true);
   };
@@ -215,6 +238,14 @@ export default function AdminProductsPage() {
     }
 
     setSaving(true);
+    // Build colorImages: Record<colorName, string[]> for the API.
+    // This syncs the per-color images when updating a product.
+    const colorImages: Record<string, string[]> = {};
+    for (const c of form.colors) {
+      if (c.name.trim() && c.imageUrl.trim()) {
+        colorImages[c.name.trim()] = [c.imageUrl.trim()];
+      }
+    }
     const payload = {
       name: form.name.trim(),
       slug: form.slug.trim(),
@@ -226,6 +257,10 @@ export default function AdminProductsPage() {
       video: form.video.trim() || null,
       isNew: form.isNew,
       isBestSeller: form.isBestSeller,
+      colors: form.colors
+        .filter((c) => c.name.trim())
+        .map((c) => ({ name: c.name.trim(), hex: c.hex.trim() || '#000000' })),
+      colorImages: Object.keys(colorImages).length > 0 ? colorImages : undefined,
     };
 
     try {
@@ -679,6 +714,100 @@ export default function AdminProductsPage() {
               onChange={(url) => setForm((p) => ({ ...p, video: url }))}
               label="Video del producto (opcional)"
             />
+
+            {/* Colors & per-color images */}
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-zinc-300">
+                  Colores e imágenes por color
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setForm((p) => ({
+                      ...p,
+                      colors: [...p.colors, { name: '', hex: '#000000', imageUrl: '' }],
+                    }))
+                  }
+                  className="border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 cursor-pointer h-8"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Añadir color
+                </Button>
+              </div>
+              <p className="text-[11px] text-zinc-500 -mt-1">
+                Cada color tiene su propia imagen. La tienda muestra la imagen del color seleccionado.
+              </p>
+
+              {form.colors.length === 0 && (
+                <div className="text-xs text-zinc-600 py-3 text-center border border-dashed border-zinc-800 rounded-lg">
+                  Sin colores. La tienda usará la imagen principal del producto.
+                </div>
+              )}
+
+              {form.colors.map((color, idx) => (
+                <div
+                  key={idx}
+                  className="bg-[#0a0a0a] border border-zinc-800 rounded-xl p-3 space-y-3"
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={color.hex}
+                      onChange={(e) => {
+                        const hex = e.target.value;
+                        setForm((p) => ({
+                          ...p,
+                          colors: p.colors.map((c, i) => (i === idx ? { ...c, hex } : c)),
+                        }));
+                      }}
+                      className="w-9 h-9 rounded-lg border border-zinc-700 cursor-pointer bg-transparent p-0.5"
+                      aria-label="Color"
+                    />
+                    <Input
+                      value={color.name}
+                      onChange={(e) => {
+                        const name = e.target.value;
+                        setForm((p) => ({
+                          ...p,
+                          colors: p.colors.map((c, i) => (i === idx ? { ...c, name } : c)),
+                        }));
+                      }}
+                      placeholder="Nombre del color (ej: Negro)"
+                      className="flex-1 bg-[#111] border-zinc-800 text-zinc-100 h-9"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        setForm((p) => ({
+                          ...p,
+                          colors: p.colors.filter((_, i) => i !== idx),
+                        }))
+                      }
+                      className="text-zinc-500 hover:text-red-400 hover:bg-red-500/10 h-9 w-9 cursor-pointer"
+                      aria-label="Eliminar color"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <MediaUploader
+                    type="image"
+                    value={color.imageUrl}
+                    onChange={(url) => {
+                      setForm((p) => ({
+                        ...p,
+                        colors: p.colors.map((c, i) => (i === idx ? { ...c, imageUrl: url } : c)),
+                      }));
+                    }}
+                    label={`Imagen del color ${color.name || `#${idx + 1}`}`}
+                  />
+                </div>
+              ))}
+            </div>
 
             <div className="flex flex-wrap gap-5 pt-2">
               <div className="flex items-center gap-2">

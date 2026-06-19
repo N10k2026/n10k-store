@@ -532,3 +532,38 @@ Stage Summary:
 - **MediaUploader integrado en `/admin/productos`**: ahora el usuario puede cambiar la imagen (y video) de cualquier producto desde el admin, subiendo un archivo nuevo (se optimiza automáticamente) o editando la URL manualmente.
 - El formulario de edición del Tank FEARLESS está listo para que el usuario suba una nueva imagen.
 - Archivo modificado: `src/app/admin/(dashboard)/productos/page.tsx` (reemplazados campos de imagen y video con MediaUploader).
+
+---
+Task ID: 10
+Agent: Main (Z.ai Code)
+Task: El usuario subió una imagen nueva para el Tank FEARLESS desde el admin, pero los cambios no se reflejaban en la tienda. Diagnosticar y corregir el bug.
+
+Work Log:
+- **Diagnóstico**: verifiqué el estado en la BD:
+  - La imagen principal SÍ se actualizó: `/uploads/images/8f4d7568195aab5c.webp` ✓
+  - El archivo optimizado existía en `public/uploads/images/` ✓
+  - La API pública devolvía la imagen nueva con cache-busting `?v=20260620` ✓
+  - **PERO** las imágenes secundarias (`ProductImage`) NO se actualizaron — seguían siendo `/products/tank-negro.webp` y `/products/tank-rojo.webp`.
+- **Causa raíz**: la función `getImagesForColor(product, colorName)` (usada por ProductGrid y FeaturedProducts) prioriza `colorImages[colorName]` sobre `product.image`. Como `colorImages['Negro']` existía con la imagen vieja, la tienda mostraba la imagen vieja aunque `image` principal fuera la nueva.
+- La API PUT `/api/admin/products/[id]` solo actualizaba el campo `image` — no sincronizaba las `ProductImage` (tabla que alimenta `colorImages`) ni los `ProductColor`.
+- **Correcciones**:
+  1. **API GET `/api/admin/products`**: añadí `include: { images, colors }` para que el formulario de edición tenga los datos de colores e imágenes por color.
+  2. **API PUT `/api/admin/products/[id]`**: añadí soporte para `colorImages` (Record<colorName, string[]>) y `colors` (array de {name, hex}). Cuando se envían, se sincronizan las tablas `ProductImage` y `ProductColor` (deleteMany + create).
+  3. **Formulario `/admin/productos`**: 
+     - Añadí `colors: ColorEntry[]` al `FormState` (cada ColorEntry tiene name, hex, imageUrl).
+     - `openEdit` ahora carga los colores del producto y su primera imagen por color.
+     - Añadí UI para gestionar colores: por cada color, un input de color (picker hex), un input de nombre, un botón de eliminar, y un `MediaUploader` para la imagen de ese color. Botón "Añadir color".
+     - `handleSubmit` ahora envía `colors` y `colorImages` en el payload.
+- Verificación end-to-end:
+  - Subí una imagen de prueba (62KB JPEG 1600×2000) → optimizada a WebP 5KB (-92%).
+  - Actualicé el Tank FEARLESS via API: `image` + `colorImages.Negro = [nueva imagen]` + `colorImages.Rojo = [imagen original]`.
+  - La API pública devolvió: `image` nueva ✓, `colorImages.Negro` = nueva imagen ✓, `colorImages.Rojo` = imagen original ✓.
+  - En la tienda (Agent Browser): la grilla de productos mostró el Tank FEARLESS con la nueva imagen optimizada `/uploads/images/e535696f0dfd4bbc.webp?v=20260620` ✓.
+  - Restauré el Tank FEARLESS a su imagen original para no dejar cambios.
+- `bun run lint`: 0 errors, 0 warnings ✓
+
+Stage Summary:
+- **Bug corregido**: los cambios de imagen desde el admin ahora se reflejan en la tienda. El problema era que la API PUT solo actualizaba `image` (principal) pero no sincronizaba `ProductImage` (imágenes por color), y la tienda prioriza `colorImages` sobre `image`.
+- **Nueva funcionalidad**: el formulario de productos ahora permite gestionar **colores e imágenes por color** desde el admin. Por cada color se puede: editar nombre, elegir color hex (picker), subir/optimizar imagen propia, eliminar.
+- **API mejorada**: PUT /api/admin/products/[id] ahora acepta `colors` y `colorImages` para sincronizar las relaciones. GET /api/admin/products ahora incluye `images` y `colors`.
+- Archivos modificados: `src/app/api/admin/products/route.ts` (include images/colors), `src/app/api/admin/products/[id]/route.ts` (sync colors + colorImages), `src/app/admin/(dashboard)/productos/page.tsx` (UI de colores + envío de colorImages).

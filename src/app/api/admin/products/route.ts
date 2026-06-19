@@ -28,6 +28,11 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: 'desc' },
     include: {
       _count: { select: { reviews: true } },
+      images: {
+        orderBy: { sortOrder: 'asc' },
+        select: { id: true, url: true, colorName: true, sortOrder: true },
+      },
+      colors: { select: { id: true, name: true, hex: true } },
     },
   });
 
