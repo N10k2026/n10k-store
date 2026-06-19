@@ -24,6 +24,7 @@ export default function FeaturedProducts() {
   const setPreselectedColor = useCartStore((state) => state.setPreselectedColor);
   const setDetailOpen = useCartStore((state) => state.setDetailOpen);
   const addItem = useCartStore((state) => state.addItem);
+  const addRecentlyViewed = useCartStore((state) => state.addRecentlyViewed);
 
   const sectionRef = useRef<HTMLElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -39,8 +40,13 @@ export default function FeaturedProducts() {
     return [...bestSellers, ...remaining].slice(0, 4);
   }, [products]);
 
-  // Product detail disabled — no-op
-  const handleViewDetail = (_product: Product, _colorName?: string) => {};
+  // Open the product detail dialog (gallery, sizes, size guide, colors, etc.)
+  const handleViewDetail = (product: Product, colorName?: string) => {
+    setSelectedProduct(product);
+    setPreselectedColor(colorName || null);
+    setDetailOpen(true);
+    addRecentlyViewed(product.id);
+  };
 
   const handleQuickAdd = (product: Product, colorName?: string) => {
     const size = getFirstAvailableSize(product);

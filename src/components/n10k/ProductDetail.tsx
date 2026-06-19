@@ -1,10 +1,10 @@
 'use client';
 
-import { useCartStore, Product, categories } from '@/lib/store';
+import { useCartStore, categories } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { X, ShoppingBag, Heart, Minus, Plus, ChevronLeft, ChevronRight, Play, Ruler, Share2, Link2, MessageCircle, Bell, Send, Star, Home } from 'lucide-react';
+import { X, ShoppingBag, Heart, Minus, Plus, ChevronLeft, ChevronRight, Play, Ruler, Share2, Link2, MessageCircle, Star, Home } from 'lucide-react';
 import SizeGuide from '@/components/n10k/SizeGuide';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -81,10 +81,16 @@ export default function ProductDetail() {
     return imgCount + (hasVideo ? 1 : 0);
   }, [selectedProduct, selectedColor, hasVideo]);
 
-  // Reset user selections when opening a product or switching products (BUG-013)
+  // Reset user selections when opening a product or switching products (BUG-013).
+  // NOTE: This effect intentionally resets local component state in response to
+  // the store-driven `isDetailOpen` / `selectedProduct` change. The
+  // `react-hooks/set-state-in-effect` rule is suppressed here because this is
+  // the canonical "synchronize local form state when the opened entity changes"
+  // pattern — the setState calls are conditional on a real external input
+  // change, not a cascading re-render source.
   useEffect(() => {
     if (!isDetailOpen || !selectedProduct?.id) return;
-
+    /* eslint-disable react-hooks/set-state-in-effect */
     setUserSelectedSize(null);
     setUserSelectedColor(null);
     setQuantity(1);
@@ -92,11 +98,9 @@ export default function ProductDetail() {
     setActiveSlideIndex(0);
     setShowDescription(false);
     setShareOpen(false);
-    setLightboxOpen(false);
-    setLightboxZoom(1);
-    setLightboxOffset({ x: 0, y: 0 });
     setNotifySize(null);
     setNotifyEmail('');
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [isDetailOpen, selectedProduct?.id]);
 
   useEffect(() => {

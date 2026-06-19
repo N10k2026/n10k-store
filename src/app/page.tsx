@@ -77,16 +77,24 @@ export default function Home() {
   const [wishlistMounted, setWishlistMounted] = useState(false);
   const [searchMounted, setSearchMounted] = useState(false);
 
+  // "Mount-on-first-open" pattern: heavy modals (Cart, ProductDetail, Wishlist,
+  // Search) are dynamically imported and only mounted the first time they open,
+  // then kept mounted to avoid re-imports. The setState in effect is intentional
+  // and idempotent (false→true once) — it does not cause cascading renders.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (isCartOpen) setCartMounted(true);
   }, [isCartOpen]);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (isDetailOpen) setDetailMounted(true);
   }, [isDetailOpen]);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (isWishlistOpen) setWishlistMounted(true);
   }, [isWishlistOpen]);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (isSearchOpen) setSearchMounted(true);
   }, [isSearchOpen]);
 

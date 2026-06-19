@@ -41,9 +41,11 @@ interface Particle {
 }
 
 function FloatingParticles() {
-  const [particles, setParticles] = useState<Particle[]>([]);
-
-  useEffect(() => {
+  // Lazy initializer: generate the random particles exactly once on first
+  // render. This replaces the previous mount-effect + setState pattern (which
+  // triggered the `react-hooks/set-state-in-effect` lint rule) with a single
+  // synchronous initialization.
+  const [particles] = useState<Particle[]>(() => {
     const arr: Particle[] = [];
     for (let i = 0; i < 18; i++) {
       arr.push({
@@ -56,8 +58,8 @@ function FloatingParticles() {
         delay: Math.random() * 6,
       });
     }
-    setParticles(arr);
-  }, []);
+    return arr;
+  });
 
   if (particles.length === 0) return null;
 
