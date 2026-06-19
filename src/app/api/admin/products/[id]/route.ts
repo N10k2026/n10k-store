@@ -71,6 +71,25 @@ export async function PUT(
       deleteMany: {},
       create: creates,
     };
+  } else if (image != null) {
+    // The admin sent a main `image` but no per-color images.
+    // The storefront displays per-color images (colorImages) in preference to
+    // the main `image`, so if we don't sync, the old per-color images would
+    // still show and the user's change would appear to have no effect.
+    // Sync: replace ALL per-color images with the new main image, attributed
+    // to each existing color (or to a single "default" entry if no colors).
+    const existingColors = await db.productColor.findMany({ where: { productId: id } });
+    const colorNames = existingColors.length > 0
+      ? existingColors.map((c) => c.name)
+      : [null]; // no colors — store as a generic image
+    colorImagesUpdate = {
+      deleteMany: {},
+      create: colorNames.map((cn, i) => ({
+        url: String(image).trim(),
+        colorName: cn,
+        sortOrder: i,
+      })),
+    };
   }
 
   // If colors array is provided, sync the ProductColor rows.

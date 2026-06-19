@@ -567,3 +567,33 @@ Stage Summary:
 - **Nueva funcionalidad**: el formulario de productos ahora permite gestionar **colores e imágenes por color** desde el admin. Por cada color se puede: editar nombre, elegir color hex (picker), subir/optimizar imagen propia, eliminar.
 - **API mejorada**: PUT /api/admin/products/[id] ahora acepta `colors` y `colorImages` para sincronizar las relaciones. GET /api/admin/products ahora incluye `images` y `colors`.
 - Archivos modificados: `src/app/api/admin/products/route.ts` (include images/colors), `src/app/api/admin/products/[id]/route.ts` (sync colors + colorImages), `src/app/admin/(dashboard)/productos/page.tsx` (UI de colores + envío de colorImages).
+
+---
+Task ID: 11
+Agent: Main (Z.ai Code)
+Task: El usuario subió una imagen nueva al Tank FEARLESS desde el admin (segunda vez) pero los cambios no se reflejaban en la tienda. Diagnosticar y corregir definitivamente.
+
+Work Log:
+- **Diagnóstico**: verifiqué el estado en la BD:
+  - `image` principal: actualizada a `/uploads/images/81bea2a4d4fe7e7d.webp` (la nueva imagen, 15KB) ✓
+  - `ProductImage` (imágenes por color): seguían siendo las viejas (`/products/tank-negro.webp`, `/products/tank-rojo.webp`) ✗
+  - API pública: `colorImages.Negro` y `colorImages.Rojo` devolvían las URLs viejas → la tienda mostraba las imágenes viejas.
+- **Causa raíz del segundo fallo**: en la corrección anterior (Task ID 10), la API PUT solo sincronizaba `colorImages` cuando el formulario enviaba explícitamente el campo `colorImages`. Pero el usuario, al editar desde el formulario, subió la imagen al campo "Imagen del producto" (principal) y NO modificó las imágenes por color en la sección "Colores e imágenes por color". Como el formulario construye `colorImages` a partir de `form.colors[].imageUrl` (que no cambiaron), enviaba las URLs viejas — o si el formulario no las envió, la API no sincronizaba.
+- Adicionalmente, la condición que añadí (`image !== existing.image`) no se disparaba porque la `image` ya estaba actualizada en la BD (de un intento anterior) — la comparación veía "igual" y no sincronizaba.
+- **Corrección definitiva**: cambié la lógica en la API PUT para que **siempre que se envíe `image` (sin `colorImages` explícito), se sincronicen TODAS las imágenes por color con esa imagen principal**. Esto garantiza que:
+  - Cambiar la imagen principal desde el admin → se refleja inmediatamente en la tienda.
+  - No importa si las imágenes por color estaban desactualizadas: se alinean con la principal.
+  - Si el usuario quiere imágenes diferentes por color, puede usar la sección "Colores e imágenes por color" (que envía `colorImages` explícito, y tiene prioridad).
+- Verificación end-to-end:
+  - Re-PUT la `image` actual del Tank FEARLESS (sin `colorImages`) → la API sincronizó `ProductImage`: ambos colores (Negro y Rojo) quedaron con `/uploads/images/81bea2a4d4fe7e7d.webp` ✓
+  - API pública: `colorImages.Negro` y `colorImages.Rojo` devolvieron la nueva imagen ✓
+  - En la tienda (Agent Browser): la grilla mostró el Tank FEARLESS con la nueva imagen `/uploads/images/81bea2a4d4fe7e7d.webp?v=20260620` (naturalWidth=979, cargada correctamente) ✓
+  - Restauré el Tank FEARLESS a su imagen original y limpié la imagen de prueba.
+- `bun run lint`: 0 errors, 0 warnings ✓
+
+Stage Summary:
+- **Bug corregido definitivamente**: ahora, cuando el usuario cambia la "Imagen del producto" desde el admin (sin tocar las imágenes por color), la API sincroniza automáticamente todas las imágenes por color con la nueva imagen principal. El cambio se refleja inmediatamente en la tienda.
+- **Comportamiento final**:
+  - Si el usuario cambia solo la "Imagen del producto" → todos los colores usan esa imagen.
+  - Si el usuario quiere imágenes diferentes por color → usa la sección "Colores e imágenes por color" (tiene prioridad).
+- Archivo modificado: `src/app/api/admin/products/[id]/route.ts` (la rama `else if (image != null)` ahora sincroniza incondicionalmente, no solo cuando `image !== existing.image`).
