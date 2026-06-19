@@ -65,6 +65,7 @@ export default function Home() {
   const isDetailOpen = useCartStore((state) => state.isDetailOpen);
   const isWishlistOpen = useCartStore((state) => state.isWishlistOpen);
   const isSearchOpen = useCartStore((state) => state.isSearchOpen);
+  const activeGender = useCartStore((state) => state.activeGender);
 
   // Manually rehydrate the persisted store after mount to prevent
   // SSR/client hydration mismatches (e.g., wishlist hearts, cart badges).
@@ -152,7 +153,7 @@ export default function Home() {
           <section className="py-1.5 sm:py-7 bg-background border-y border-border relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-[#E30613]/5 via-transparent to-[#E30613]/5 pointer-events-none" />
             <Marquee
-              texts={['N10K', 'ROPA MASCULINA', 'STYLE']}
+              texts={['N10K', activeGender === 'mujer' ? 'ROPA FEMENINA' : 'ROPA MASCULINA', 'STYLE']}
               speed={70}
               reverse
               separator="◆"

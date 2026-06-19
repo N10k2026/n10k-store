@@ -75,7 +75,7 @@ export default function Header() {
     { label: 'Colección', href: '#collection' },
     { label: 'Novedades', href: '#new-arrivals' },
     { label: 'Nosotros', href: '#about' },
-    { label: 'Contacto', href: '#contact' },
+    { label: 'Contacto', href: '#newsletter' },
   ];
 
   const handleNavClick = (href: string) => {
