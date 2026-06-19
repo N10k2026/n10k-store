@@ -15,11 +15,13 @@ import {
   X,
   Store,
   ExternalLink,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/admin/productos', label: 'Productos', icon: Package },
+  { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
   { href: '/admin/pedidos', label: 'Pedidos', icon: ShoppingBag },
   { href: '/admin/resenas', label: 'Reseñas', icon: Star },
   { href: '/admin/newsletter', label: 'Newsletter', icon: Mail },

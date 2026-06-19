@@ -1,18 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 
-// Fallback banners (used if the API is unreachable or returns no banners)
-const FALLBACK_BANNERS = [
-  '/banners/hero-1.webp',
-  '/banners/hero-2.webp',
-  '/banners/hero-3.webp',
-  '/banners/hero-4.webp',
-];
-
-const SLIDE_INTERVAL = 5000;
 const FADE_DURATION = 1200;
+const SLIDE_INTERVAL = 6000;
 
 interface BannerData {
   id: string;
@@ -21,67 +13,68 @@ interface BannerData {
   link?: string | null;
 }
 
-export default function MobileBannerHero() {
+/**
+ * Desktop banner carousel — shown when the admin has configured desktop
+ * banners. If no desktop banners exist, the parent (ScrollVideoHero) falls
+ * back to the canvas video scroll.
+ */
+export default function DesktopBannerHero() {
   const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const indexRef = useRef(0);
-  const [banners, setBanners] = useState<BannerData[]>(
-    FALLBACK_BANNERS.map((url, i) => ({
-      id: `fallback-${i}`,
-      title: `Banner N10K ${i + 1}`,
-      imageUrl: url,
-      link: null,
-    })),
-  );
+  const [banners, setBanners] = useState<BannerData[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
-  // Load active banners for mobile from the API
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/banners?placement=mobile')
+    fetch('/api/banners?placement=desktop')
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (cancelled) return;
-        if (data?.banners && Array.isArray(data.banners) && data.banners.length > 0) {
+        if (data?.banners && Array.isArray(data.banners)) {
           setBanners(data.banners);
         }
+        setLoaded(true);
       })
-      .catch(() => {
-        // keep fallback banners
-      });
+      .catch(() => setLoaded(true));
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const advance = useCallback(() => {
+  const advance = () => {
     const container = containerRef.current;
     if (!container) return;
-
     const slides = container.querySelectorAll<HTMLElement>('[data-slide]');
-    if (slides.length === 0) return;
+    if (slides.length <= 1) return;
     const prev = indexRef.current;
     const next = (prev + 1) % slides.length;
-
     slides[prev]?.style.setProperty('opacity', '0');
-    slides[prev]?.style.setProperty('transition', `opacity ${FADE_DURATION}ms ease-in-out`);
     slides[next]?.style.setProperty('opacity', '1');
-    slides[next]?.style.setProperty('transition', `opacity ${FADE_DURATION}ms ease-in-out`);
     slides[next]?.style.setProperty('z-index', '2');
     slides[prev]?.style.setProperty('z-index', '1');
-
     indexRef.current = next;
-  }, []);
+  };
 
   useEffect(() => {
-    if (banners.length <= 1) return; // no rotation needed for a single banner
+    if (banners.length <= 1) return;
     timerRef.current = setInterval(advance, SLIDE_INTERVAL);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [advance, banners.length]);
+  }, [banners.length]);
+
+  // Signal to parent whether desktop banners are available
+  // (parent decides whether to render this or the video)
+  if (!loaded) return null;
+  if (banners.length === 0) return null;
 
   return (
-    <div ref={containerRef} className="absolute inset-0 overflow-hidden md:hidden">
+    <div
+      ref={containerRef}
+      className="absolute inset-0 overflow-hidden"
+      aria-label="Carrusel de banners"
+    >
       {banners.map((banner, i) => {
         const isExternal = /^https?:\/\//.test(banner.imageUrl);
         const imgEl = isExternal ? (
@@ -116,7 +109,6 @@ export default function MobileBannerHero() {
           </div>
         );
 
-        // Wrap in a link if the banner has one
         if (banner.link) {
           return (
             <a

@@ -411,3 +411,56 @@ Stage Summary:
 - **Protección de rutas**: middleware Edge-compatible redirige a login si no hay sesión.
 - Archivos creados: schema Prisma (3 modelos nuevos), `src/lib/admin-session.ts`, `src/lib/admin-auth.ts`, `src/middleware.ts`, 9 APIs en `src/app/api/admin/`, 7 páginas en `src/app/admin/` (login + dashboard + 5 CRUD).
 - Verificado end-to-end: login → dashboard → crear producto → aparece en tienda → eliminar producto → desaparece de tienda.
+
+---
+Task ID: 7
+Agent: Main (Z.ai Code)
+Task: Añadir gestión de banners al panel admin — poder seleccionar qué banners aparecen en desktop y mobile por separado.
+
+Work Log:
+- Investigué la arquitectura actual de banners:
+  - Desktop: `ScrollVideoHero` usa un video scroll canvas (`/video/hero-banner-hd.mp4`) por defecto. Los archivos `/banners/hero-*.webp` no se usaban en desktop.
+  - Mobile: `MobileBannerHero` usa un array hardcodeado de 4 imágenes (`/banners/hero-1..4.webp`).
+- Diseñé el subsistema de banners:
+  - Modelo `Banner` en Prisma: title, imageUrl, link, placement (desktop|mobile|both), isActive, sortOrder.
+  - API pública `GET /api/banners?placement=` — filtra por placement, devuelve solo activos.
+  - API admin `GET/POST /api/admin/banners`, `PUT/DELETE /api/admin/banners/[id]`.
+  - Componente `DesktopBannerHero` (carrusel desktop con crossfade) como alternativa al video scroll.
+  - `MobileBannerHero` actualizado para cargar banners desde la API (con fallback al array hardcodeado si no hay banners).
+  - `ScrollVideoHero` actualizado: si hay banners desktop activos, usa `DesktopBannerHero` en lugar del canvas video scroll; si no, mantiene el video.
+- Schema Prisma: añadí modelo `Banner` con índice `[placement, isActive, sortOrder]`. Ejecuté `db:push` + `db:generate`.
+- APIs creadas:
+  - `src/app/api/banners/route.ts` — pública, sin auth, filtra por placement.
+  - `src/app/api/admin/banners/route.ts` — GET (lista todos) / POST (crea).
+  - `src/app/api/admin/banners/[id]/route.ts` — PUT (actualiza) / DELETE (elimina).
+- Componentes:
+  - `src/components/n10k/DesktopBannerHero.tsx` — carrusel desktop con crossfade, carga banners desde `/api/banners?placement=desktop`, soporta imágenes locales (next/image) y externas (img), enlaces clickables.
+  - `src/components/n10k/MobileBannerHero.tsx` — reescrito para cargar banners desde `/api/banners?placement=mobile` con fallback al array hardcodeado. Soporta enlaces clickables.
+  - `src/components/n10k/ScrollVideoHero.tsx` — añadido estado `useDesktopBanners` + effect que verifica si hay banners desktop. Si los hay, renderiza `DesktopBannerHero` y oculta el canvas/overlay de video. Si no, mantiene el video scroll.
+- Página admin:
+  - `src/app/admin/(dashboard)/banners/page.tsx` — gestión completa:
+    - Cards de resumen: banners activos en Escritorio y Móvil (con indicador "carrusel visible" vs "video scroll por defecto").
+    - Lista de banners ordenada por sortOrder, con preview, título, badge de placement (Escritorio/Móvil/Ambos), URL de imagen, enlace.
+    - Acciones por banner: mover arriba/abajo (swap sortOrder), toggle activo/inactivo, editar, eliminar (con confirmación).
+    - Modal crear/editar: título, URL de imagen (con preview en vivo), enlace opcional, selector de placement (3 botones visuales: Escritorio/Móvil/Ambos), toggle activo.
+    - Estados de loading/error/vacío con CTA.
+    - Toasts sonner para feedback.
+  - Añadido "Banners" al sidebar del admin layout (icono ImageIcon, entre Productos y Pedidos).
+- Verificación end-to-end con Agent Browser:
+  - **Creé 3 banners de prueba** (desktop, mobile, both) via API → todos se guardaron en la BD.
+  - **API pública filtra correctamente**: `?placement=desktop` devuelve 2 (desktop + both), `?placement=mobile` devuelve 2 (mobile + both) ✓
+  - **Desktop (1280px)**: la tienda cargó los banners `hero-1.webp` y `hero-3.webp` en el hero, y el canvas del video scroll quedó oculto (`hasCanvas:false`) — el carrusel reemplazó al video ✓
+  - **Mobile (375px)**: la tienda cargó los banners `hero-2.webp` y `hero-3.webp` ✓
+  - **Página /admin/banners**: muestra cards de resumen, lista los 3 banners con previews y badges de placement, botones de editar/eliminar/toggle/mover ✓
+  - **Al eliminar todos los banners**: la tienda volvió automáticamente al video scroll (`hasCanvas:true, canvasVisible:true`) ✓
+- `bun run lint`: 0 errors, 0 warnings ✓
+- `dev.log` limpio, todas las rutas HTTP 200 ✓
+
+Stage Summary:
+- **Gestión de banners completa** en `/admin/banners` — el admin puede crear, editar, eliminar, activar/desactivar y reordenar banners.
+- **Control por plataforma**: cada banner tiene un `placement` (Escritorio / Móvil / Ambos) que determina dónde aparece.
+- **Desktop**: si hay banners desktop activos, el hero muestra un carrusel con crossfade en lugar del video scroll. Si no hay, mantiene el video scroll por defecto.
+- **Mobile**: si hay banners mobile activos, se muestran en lugar de los banners hardcodeados por defecto.
+- **Banners clickables**: cada banner puede tener un enlace (ej: `#collection`, `/admin/productos`).
+- **Integración con tienda**: los cambios en el admin se reflejan inmediatamente en la tienda principal porque ambos leen de la misma BD via `/api/banners`.
+- Archivos creados/modificados: schema Prisma (+Banner), 3 APIs (banners, admin/banners, admin/banners/[id]), 3 componentes (DesktopBannerHero nuevo, MobileBannerHero reescrito, ScrollVideoHero modificado), 1 página admin (banners), admin layout (sidebar +Banners).

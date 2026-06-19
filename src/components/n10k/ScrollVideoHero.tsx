@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { usePerformancePrefs } from '@/hooks/use-performance-prefs';
 import { devError } from '@/lib/dev-log';
 import MobileBannerHero from '@/components/n10k/MobileBannerHero';
+import DesktopBannerHero from '@/components/n10k/DesktopBannerHero';
 
 /**
  * ScrollVideoHero — Canvas-based scroll-driven video hero (desktop only).
@@ -98,6 +99,10 @@ export default function ScrollVideoHero() {
   const useStaticHero = prefs.useStaticHero;
   const isMobile = prefs.isMobile;
 
+  // Check whether the admin has configured desktop banners. If so, we use
+  // the desktop banner carousel instead of the canvas video scroll.
+  const [useDesktopBanners, setUseDesktopBanners] = useState(false);
+
   // On mobile, always use the banner carousel instead of video scroll
   const useMobileBanners = isMobile || useStaticHero;
 
@@ -114,6 +119,31 @@ export default function ScrollVideoHero() {
   const canvasReadyRef = useRef(false);
   const overlayTriggeredRef = useRef(false);
   const overlayAnimRefs = useRef<gsap.core.Tween[]>([]);
+
+  // ── Desktop: check if admin has configured desktop banners ──
+  // If so, switch to the banner carousel and skip the canvas video flow.
+  useEffect(() => {
+    if (useMobileBanners) return; // mobile already uses its own banner carousel
+    let cancelled = false;
+    fetch('/api/banners?placement=desktop')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.banners && Array.isArray(data.banners) && data.banners.length > 0) {
+          setUseDesktopBanners(true);
+          setFramesReady(true);
+          setShowEntrance(true);
+          setShowOverlay(true);
+          document.body.classList.add(BODY_CLASS);
+        }
+      })
+      .catch(() => {
+        // keep video scroll fallback
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [useMobileBanners]);
 
   // ── Mobile: show overlay with entrance animation ──
   useEffect(() => {
@@ -533,8 +563,11 @@ export default function ScrollVideoHero() {
       {/* ── Mobile: Banner Carousel ── */}
       {useMobileBanners && <MobileBannerHero />}
 
+      {/* ── Desktop: Banner Carousel (admin-configured) ── */}
+      {useDesktopBanners && !useMobileBanners && <DesktopBannerHero />}
+
       {/* ── Desktop: Loading overlay ── */}
-      {!framesReady && !useStaticHero && !useMobileBanners && (
+      {!framesReady && !useStaticHero && !useMobileBanners && !useDesktopBanners && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black">
           <div className="mb-6">
             <span className="text-2xl font-bold tracking-[0.3em] text-white/90">
@@ -554,7 +587,7 @@ export default function ScrollVideoHero() {
       )}
 
       {/* ── Desktop: Canvas wrapper with entrance animation ── */}
-      {!useStaticHero && !useMobileBanners && (
+      {!useStaticHero && !useMobileBanners && !useDesktopBanners && (
         <div
           ref={wrapRef}
           className={`absolute inset-0 will-change-transform ${
@@ -583,7 +616,7 @@ export default function ScrollVideoHero() {
       )}
 
       {/* ── Desktop: Scroll hint ── */}
-      {framesReady && !showOverlay && !useStaticHero && !useMobileBanners && (
+      {framesReady && !showOverlay && !useStaticHero && !useMobileBanners && !useDesktopBanners && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none">
           <div className="flex flex-col items-center gap-4 animate-scroll-hint-large">
             <span className="text-base sm:text-lg md:text-xl tracking-[0.4em] sm:tracking-[0.5em] uppercase text-white/60 font-montserrat-bold">
