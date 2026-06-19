@@ -146,18 +146,18 @@ export default function Home() {
           <WishlistSection />
           <FeaturedProducts />
 
-          {/* Cashea marquee — yellow bar with "Compra ahora y paga después" */}
-          <div className="bg-[#FFD700] py-1.5 overflow-hidden relative">
+          {/* Cashea marquee — black bar with gold text + Cashea logo separators */}
+          <div className="bg-[#010101] py-2 overflow-hidden relative">
             <div className="flex items-center whitespace-nowrap" style={{ animation: 'marquee-scroll 25s linear infinite' }}>
-              {[...Array(8)].map((_, i) => (
-                <span key={i} className="flex items-center gap-2 px-4">
-                  <span className="text-[11px] sm:text-xs font-bold text-black/80 tracking-wide uppercase">
+              {[...Array(10)].map((_, i) => (
+                <span key={i} className="flex items-center gap-3 px-3">
+                  <span className="text-xs sm:text-sm font-bold text-[#FFD700] tracking-[0.08em] uppercase">
                     Compra ahora y paga después
                   </span>
                   <img
-                    src="/brand/cashea-yellow.webp"
+                    src="/brand/cashea-logo.webp"
                     alt="Cashea"
-                    className="h-4 sm:h-5 w-auto"
+                    className="h-5 sm:h-6 w-auto"
                   />
                 </span>
               ))}
