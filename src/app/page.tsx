@@ -146,12 +146,12 @@ export default function Home() {
           <WishlistSection />
           <FeaturedProducts />
 
-          {/* Cashea marquee — black bar with gold text + Cashea logo separators */}
-          <div className="bg-[#010101] py-2 overflow-hidden relative">
+          {/* Cashea marquee — yellow bar with black text + Cashea logo separators */}
+          <div className="bg-[#FFD700] py-2 overflow-hidden relative">
             <div className="flex items-center whitespace-nowrap" style={{ animation: 'marquee-scroll 25s linear infinite' }}>
               {[...Array(10)].map((_, i) => (
-                <span key={i} className="flex items-center gap-3 px-3">
-                  <span className="text-xs sm:text-sm font-bold text-[#FFD700] tracking-[0.08em] uppercase">
+                <span key={i} className="flex items-center gap-6 px-4">
+                  <span className="text-xs sm:text-sm font-bold text-black tracking-[0.08em] uppercase">
                     Compra ahora y paga después
                   </span>
                   <img
