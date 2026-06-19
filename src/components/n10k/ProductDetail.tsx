@@ -1,6 +1,7 @@
 'use client';
 
 import { useCartStore, categories } from '@/lib/store';
+import { sortColorsByWarmth } from '@/lib/color-sort';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -474,7 +475,7 @@ export default function ProductDetail() {
               Color: <span className="text-[#E30613]">{selectedColor}</span>
             </p>
             <div className="flex gap-2.5">
-              {selectedProduct.colors.map((color) => (
+              {sortColorsByWarmth(selectedProduct.colors).map((color) => (
                 <button
                   key={color.name}
                   className={`relative w-8 h-8 rounded-full border-2 transition-all duration-300 cursor-pointer ${
@@ -910,7 +911,7 @@ export default function ProductDetail() {
                 Color: <span className="text-[#E30613]">{selectedColor}</span>
               </p>
               <div className="flex gap-3">
-                {selectedProduct.colors.map((color) => (
+                {sortColorsByWarmth(selectedProduct.colors).map((color) => (
                   <button
                     key={color.name}
                     className={`relative w-9 h-9 rounded-full border-2 transition-all duration-300 cursor-pointer ${

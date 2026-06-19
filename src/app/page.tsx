@@ -124,6 +124,25 @@ export default function Home() {
 
       <div className="relative z-10 flex flex-col min-h-screen pb-20">
         <Header />
+
+        {/* Cashea marquee — yellow bar with "Compra ahora y paga después" */}
+        <div className="bg-[#FFD700] py-1.5 overflow-hidden relative z-20">
+          <div className="flex items-center whitespace-nowrap" style={{ animation: 'marquee-scroll 25s linear infinite' }}>
+            {[...Array(8)].map((_, i) => (
+              <span key={i} className="flex items-center gap-2 px-4">
+                <span className="text-[11px] sm:text-xs font-bold text-black/80 tracking-wide uppercase">
+                  Compra ahora y paga después
+                </span>
+                <img
+                  src="/brand/cashea-yellow.webp"
+                  alt="Cashea"
+                  className="h-4 sm:h-5 w-auto"
+                />
+              </span>
+            ))}
+          </div>
+        </div>
+
         <main id="main-content" className="flex-1">
           <h1 className="sr-only">N10K — Ropa de caballero urbana y deportiva</h1>
           <ScrollVideoHero />
