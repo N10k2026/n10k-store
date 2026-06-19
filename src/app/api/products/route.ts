@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { transformProduct } from '@/lib/product-utils';
+import { ensureDatabase } from '@/lib/db-init';
 import {
   isDatabaseUnavailableError,
   isStaticCatalogFallbackEnabled,
@@ -68,6 +69,11 @@ export async function GET(request: NextRequest) {
   if (isNew === 'true') where.isNew = true;
 
   try {
+    // Ensure the database is initialized (auto-seed if empty/missing).
+    // This is a no-op if the DB already has data — it never overwrites
+    // user changes (hidden products, edits, etc.).
+    await ensureDatabase();
+
     const [total, products] = await db.$transaction([
       db.product.count({ where }),
       db.product.findMany({

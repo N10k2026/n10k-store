@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminLogin, ensureDefaultAdmin } from '@/lib/admin-auth';
 import { applyRateLimit } from '@/lib/rate-limit';
+import { ensureDatabase } from '@/lib/db-init';
 
 export async function POST(req: NextRequest) {
   // Brute-force protection: max 10 login attempts per 15 minutes per IP.
@@ -11,6 +12,12 @@ export async function POST(req: NextRequest) {
       { status: 429, headers: { 'Retry-After': String(limited.retryAfter) } },
     );
   }
+
+  // Ensure the database is initialized (creates tables + seeds if empty).
+  await ensureDatabase().catch(() => {
+    // If ensureDatabase fails (e.g., DB file missing), try ensureDefaultAdmin
+    // which will also fail gracefully — the error will surface below.
+  });
 
   // Lazily create the default admin on first login attempt so the
   // subsystem is usable immediately after db:push without a seed step.
