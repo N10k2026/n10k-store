@@ -115,3 +115,32 @@ Stage Summary:
 - Bonus: al remover el `eslint-disable` unused en `use-scroll-raf.ts`, detecté y corregí un error real de React (`ref.current = value` durante render) moviéndolo a un effect.
 - Archivos modificados: `src/lib/product-utils.ts`, `src/hooks/use-toast.ts`, `src/hooks/use-scroll-raf.ts`, `src/app/api/reviews/route.ts`, `src/components/n10k/Plasma.tsx`, `src/components/n10k/SizeGuide.tsx`, `src/components/n10k/TestimonialsSection.tsx`, `src/components/n10k/WishlistSection.tsx`, `src/components/n10k/ProductGrid.tsx`, `src/components/n10k/ProductDetail.tsx`, `src/components/n10k/SearchModal.tsx`, `src/components/n10k/RecentlyViewedSection.tsx`, `src/components/n10k/WishlistSidebar.tsx`.
 - Verificación end-to-end con Agent Browser: todos los flujos (detalle, search, recently viewed, wishlist) funcionan sin errores runtime.
+
+---
+Task ID: 4
+Agent: Main (Z.ai Code)
+Task: Corregir un número que dejaba de ser responsive (imagen del usuario: upload/pasted_image_1781828508206.png, 385x330).
+
+Work Log:
+- Analicé la imagen del usuario (385x330, proporción apaisada ~1.17:1, sugiere recorte de una zona).
+- Busqué componentes con "números" en el proyecto: WhatsAppButton (botón flotante, no muestra número como texto), StatsSection (4 estadísticas con AnimatedCounter: 2.500+, 50+, 24, 98%), precios de productos.
+- Reproduje con Agent Browser en viewport desktop (1280x720): la sección "LA COMUNIDAD N10K" (StatsSection) mostraba el número "2.500+" con **overflow: true** — 259px de ancho en un card de 238px. El fontSize era 60px (clase `lg:text-6xl`).
+- Causa raíz: en `StatsSection.tsx` línea 83, el `AnimatedCounter` usaba clases Tailwind fijas `text-2xl sm:text-4xl md:text-5xl lg:text-6xl` con `whitespace-nowrap`. En desktop (lg), `text-6xl` = 60px hacía que "2.500+" (6 caracteres con signo + y separador de miles) midiera 259px, desbordando el card del grid de 4 columnas (238px tras padding p-6 y gap-6).
+- Verificación móvil (375x667): en mobile no desbordaba (text-2xl = 24px, "2.500+" = 104px < 164px card), pero el problema era claramente visible en desktop/tablet donde el número se salía del card.
+- **Corrección**: reemplacé las clases Tailwind fijas por un `font-size` fluido con `clamp()` en un style inline:
+  - `fontSize: 'clamp(1.25rem, 3.5vw, 2.75rem)'` — min 20px (mobile), preferred 3.5vw (escala con viewport), max 44px (desktop).
+  - Mantiene `tabular-nums`, `whitespace-nowrap`, `font-montserrat-black`, `leading-none` para preservar el diseño.
+  - Comenté la justificación del clamp en el código.
+- Verificación post-fix con Agent Browser en 3 viewports:
+  - **Mobile 375px**: "2.500+" = 87px, card = 164px, font 20px → overflow: false ✓
+  - **Tablet 768px**: "2.500+" = 116px, card = 356px, font 26.88px → overflow: false ✓
+  - **Desktop 1280px**: "2.500+" = 190px, card = 238px, font 44px → overflow: false ✓ (antes 259px, overflow: true)
+  - Check global: `anyOverflow: false` para los 4 stats.
+- `bun run lint`: 0 errors, 0 warnings (sigue limpio).
+- `dev.log` sin errores de compile/runtime; sin errores en consola del navegador.
+
+Stage Summary:
+- **Bug de responsividad corregido**: el número "2.500+" de la sección "LA COMUNIDAD N10K" (StatsSection) ya no desborda su card en ningún breakpoint.
+- Solución: reemplazar tamaños de fuente Tailwind fijos (`text-2xl sm:text-4xl md:text-5xl lg:text-6xl`) por `clamp(1.25rem, 3.5vw, 2.75rem)` que escala fluidamente con el viewport, respetando el ancho del card.
+- Archivo modificado: `src/components/n10k/StatsSection.tsx` (AnimatedCounter span).
+- Verificado en mobile (375px), tablet (768px) y desktop (1280px): ningún número desborda, el diseño se ve consistente y legible en todos los tamaños.

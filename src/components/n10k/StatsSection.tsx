@@ -80,7 +80,16 @@ function AnimatedCounter({ value, suffix, duration = 2 }: { value: number; suffi
     <div className="relative">
       <span
         ref={ref}
-        className={`count-up-number font-montserrat-black text-2xl sm:text-4xl md:text-5xl lg:text-6xl text-white tabular-nums inline-block whitespace-nowrap leading-none ${isFinished ? 'animate-red-pulse' : ''}`}
+        className={`count-up-number font-montserrat-black text-white tabular-nums inline-block whitespace-nowrap leading-none ${isFinished ? 'animate-red-pulse' : ''}`}
+        style={{
+          // Fluid font-size that scales with the viewport but is capped so the
+          // longest stat ("2.500+") never overflows its card across any
+          // breakpoint. Fixed Tailwind text-* sizes (text-6xl = 60px at lg)
+          // caused the number to overflow the ~238px card on desktop.
+          // clamp(min, preferred, max): min 1.25rem (mobile), preferred ~3.5vw,
+          // max 2.75rem (44px) — fits "2.500+" inside a 4-col card with padding.
+          fontSize: 'clamp(1.25rem, 3.5vw, 2.75rem)',
+        }}
       >
         {count.toLocaleString('es-VE')}{suffix}
       </span>
