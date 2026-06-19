@@ -355,3 +355,59 @@ Stage Summary:
 - Fechas con `toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })`, precios con `$${n.toFixed(2)}`.
 - `bun run lint` pasa 100% limpio (0 errors, 0 warnings). Self-contained: un solo archivo, monta su propio `<Toaster />` de sonner.
 - Manejo de filtro activo tras cambio de estado: si el nuevo status no matchea el filtro, el pedido se remueve de la lista visible (reaparece en su tab correspondiente o en refetch).
+
+---
+Task ID: 6
+Agent: Main (Z.ai Code)
+Task: Crear un subsistema de administración en /admin para gestionar productos, reseñas, newsletter, pedidos y configuración de la tienda. Debe tener login, dashboard, y permitir agregar/editar/eliminar productos que aparezcan en la tienda principal.
+
+Work Log:
+- Diseñé la arquitectura del subsistema admin:
+  - Auth: PBKDF2 (Web Crypto) para passwords + JWT firmado (HMAC-SHA256) en cookie httpOnly. Sin dependencias externas (no NextAuth).
+  - Middleware: `src/middleware.ts` protege `/admin/*` (excepto `/admin/login`), verifica cookie de sesión. Edge-compatible (solo Web Crypto, sin Prisma).
+  - Estructura: route groups — `src/app/admin/(dashboard)/` con shell (sidebar+topbar), `src/app/admin/login/` sin shell.
+  - APIs: `src/app/api/admin/*` para login, logout, me, stats, products, reviews, newsletter, orders, settings.
+- Schema Prisma: añadí modelos `AdminUser` (username, passwordHash, passwordSalt, name), `Order` (customerName, items JSON, total, status), `SiteSetting` (key-value). Ejecuté `db:push` y `db:generate`.
+- Auth: creé `src/lib/admin-session.ts` (Edge-compatible: hashPassword, verifyPassword, signSession, verifySession, verifyAdminToken) y `src/lib/admin-auth.ts` (Node.js: adminLogin, adminLogout, getAdminSession, ensureDefaultAdmin — usa Prisma). Separación crucial para que el middleware no importe Prisma (que usa `process.once` no disponible en Edge Runtime).
+- Middleware: `src/middleware.ts` importa SOLO de `admin-session.ts`, verifica token, redirige a `/admin/login?from=...` si no hay sesión.
+- APIs creadas:
+  - `POST /api/admin/login` (login + ensureDefaultAdmin), `POST /api/admin/logout`, `GET /api/admin/me`
+  - `GET/POST /api/admin/products`, `PUT/DELETE /api/admin/products/[id]`
+  - `GET/DELETE /api/admin/reviews`, `DELETE /api/admin/reviews/[id]`
+  - `GET/DELETE /api/admin/newsletter`
+  - `GET/PUT /api/admin/settings`
+  - `GET /api/admin/orders`, `PUT/DELETE /api/admin/orders/[id]`
+  - `GET /api/admin/stats` (dashboard con métricas reales: counts, revenue, orders by status, recent orders/reviews, top products)
+- Frontend:
+  - `src/app/admin/(dashboard)/layout.tsx` — shell con sidebar (Dashboard, Productos, Pedidos, Reseñas, Newsletter, Configuración) + topbar (nombre admin, avatar, logout) + link "Ver tienda". Responsive (drawer en mobile).
+  - `src/app/admin/login/page.tsx` — página de login con formulario, credenciales por defecto (admin/admin123), redirección al destino original.
+  - `src/app/admin/(dashboard)/page.tsx` — dashboard con stat cards (ingresos, pedidos, productos, reseñas), pedidos recientes, pedidos por estado, productos mejor valorados, reseñas recientes.
+  - Delegué a subagentes full-stack-developer las páginas CRUD (Task IDs 6-a a 6-e):
+    - `/admin/productos` — tabla de productos, búsqueda, filtro por categoría, modal crear/editar (nombre, slug auto-gen, categoría, precio, imagen, descripción, video, isNew, isBestSeller, tallas, colores), eliminar con confirmación.
+    - `/admin/resenas` — lista de reseñas, filtro por rating, eliminar con confirmación.
+    - `/admin/newsletter` — lista de suscriptores, búsqueda, export CSV, eliminar.
+    - `/admin/settings` — formulario de configuración (datos tienda, redes sociales, hero, mensajes), guardar/reset.
+    - `/admin/pedidos` — lista de pedidos, filtro por estado, cambiar estado inline, ver detalles, eliminar.
+- Bug corregido: el middleware inicialmente importaba `admin-auth.ts` que arrastra `db.ts` (Prisma) → error "process.once not supported in Edge Runtime". Solución: separé las funciones Edge-compatible en `admin-session.ts` y el middleware importa solo de ahí.
+- Bug corregido: `db.adminUser` era undefined tras `db:push` porque el Prisma Client cacheado en `globalThis.prisma` no tenía el modelo nuevo. Solución: `db:generate` + reiniciar el dev server.
+- Verificación end-to-end con Agent Browser:
+  - `/admin` sin sesión → redirige a `/admin/login?from=/admin` (307) ✓
+  - Login con admin/admin123 → redirige a `/admin` (dashboard) ✓
+  - Dashboard muestra sidebar, topbar con "Administrador", stat cards, secciones de pedidos/productos/reseñas ✓
+  - Navegación a /admin/productos, /admin/pedidos, /admin/resenas, /admin/newsletter, /admin/settings — todas cargan correctamente ✓
+  - **Integración con tienda principal verificada**: creé "Producto Test Admin" via API admin → apareció en `/api/products` (7 productos) → apareció en la grilla de la tienda principal ("Ver detalle de Producto Test Admin") → lo eliminé via admin → volvió a 6 productos ✓
+- `bun run lint`: 0 errors, 0 warnings ✓
+- `dev.log` limpio, sin errores runtime ✓
+
+Stage Summary:
+- **Subsistema de administración completo y funcional** en `/admin`, separado del storefront (su propio layout, sidebar, topbar, sin LoadingScreen).
+- **Login seguro** con PBKDF2 + JWT en cookie httpOnly. Credenciales por defecto: `admin` / `admin123` (se crean automáticamente en el primer login).
+- **Dashboard** con métricas reales de la base de datos (productos, pedidos, reseñas, newsletter, ingresos, top productos, reseñas recientes).
+- **CRUD de productos completo**: crear, editar, eliminar — los productos creados aparecen inmediatamente en la tienda principal (`/`) porque ambas leen de la misma BD SQLite.
+- **Gestión de pedidos**: cambiar estado, ver detalles, eliminar.
+- **Gestión de reseñas**: ver, filtrar por rating, eliminar.
+- **Gestión de newsletter**: ver suscriptores, exportar CSV, eliminar.
+- **Configuración de la tienda**: datos de contacto, redes sociales, hero, mensajes.
+- **Protección de rutas**: middleware Edge-compatible redirige a login si no hay sesión.
+- Archivos creados: schema Prisma (3 modelos nuevos), `src/lib/admin-session.ts`, `src/lib/admin-auth.ts`, `src/middleware.ts`, 9 APIs en `src/app/api/admin/`, 7 páginas en `src/app/admin/` (login + dashboard + 5 CRUD).
+- Verificado end-to-end: login → dashboard → crear producto → aparece en tienda → eliminar producto → desaparece de tienda.
