@@ -154,11 +154,11 @@ export default function AdminLoginPage() {
           {/* Default credentials hint */}
           <div className="mt-6 pt-5 border-t border-zinc-800">
             <p className="text-[11px] text-zinc-500 text-center leading-relaxed">
-              <span className="font-semibold text-zinc-400">Credenciales por defecto:</span>
+              <span className="font-semibold text-zinc-400">Credenciales:</span>
               <br />
-              usuario <code className="text-[#E30613] bg-[#E30613]/10 px-1.5 py-0.5 rounded">admin</code>{' '}
+              usuario <code className="text-[#E30613] bg-[#E30613]/10 px-1.5 py-0.5 rounded">Alain</code>{' '}
               · contraseña{' '}
-              <code className="text-[#E30613] bg-[#E30613]/10 px-1.5 py-0.5 rounded">admin123</code>
+              <code className="text-[#E30613] bg-[#E30613]/10 px-1.5 py-0.5 rounded">Alanna</code>
             </p>
           </div>
         </div>

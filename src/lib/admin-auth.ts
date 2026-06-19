@@ -101,13 +101,13 @@ export async function requireAdmin(): Promise<SessionPayload> {
 export async function ensureDefaultAdmin(): Promise<void> {
   const count = await db.adminUser.count();
   if (count > 0) return;
-  const { hash, salt } = await hashPassword('admin123');
+  const { hash, salt } = await hashPassword('Alanna');
   await db.adminUser.create({
     data: {
-      username: 'admin',
+      username: 'Alain',
       passwordHash: hash,
       passwordSalt: salt,
-      name: 'Administrador',
+      name: 'Alain',
     },
   });
 }
