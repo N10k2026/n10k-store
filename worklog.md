@@ -705,3 +705,53 @@ Stage Summary:
 - **Seguridad**: `deleteUploadByUrl` verifica referencias cruzadas en toda la BD antes de unlink — nunca elimina un archivo que otro producto/banner todavía usa. Solo toca archivos bajo `/uploads/` (los estáticos en `/products/`, `/brand/` etc. nunca se borran).
 - **Cache del navegador**: las URLs de uploads son content-hash + cache inmutable de 1 año. Al reemplazar una imagen, la nueva tiene un hash diferente → URL diferente → el navegador la pide fresca. La vieja, al ser eliminada del disco, no se sirve más (si el navegador la tiene cacheada, la URL ya no se usa en el HTML).
 - Archivos creados/modificados: `src/lib/orphan-cleanup.ts` (nuevo), `src/app/api/admin/products/[id]/route.ts` (cleanup en PUT+DELETE), `src/app/api/admin/banners/[id]/route.ts` (cleanup en PUT+DELETE), `src/app/api/admin/cleanup/route.ts` (nuevo, barrido global).
+
+---
+Task ID: 14
+Agent: Main (Z.ai Code)
+Task: (1) Solucionar error "Video load failed" en mobile (no se usa ScrollVideoHero en mobile). (2) Añadir posibilidad de añadir varias imágenes por color de prenda.
+
+Work Log:
+- **Análisis del error** (con subagente VLM, Task 14-vision): la imagen del usuario (540x1230 mobile) mostraba el overlay de Next.js con "Console Error: Video load failed" originado en `ScrollVideoHero.useEffect .extractFrame`. Causa raíz: race condition de hidratación — `usePerformancePrefs()` devuelve `isMobile=false` durante SSR, el effect de extracción de video se ejecuta en el primer render client (antes de que `isMobile` se actualice a `true`), carga el video, y este falla en mobile disparando el error.
+
+**Fix del error (2 capas):**
+
+  1. **Guard `prefsHydrated` en ScrollVideoHero** (`src/components/n10k/ScrollVideoHero.tsx`):
+     - Añadí estado `prefsHydrated` que empieza `false` y pasa a `true` tras el mount.
+     - El effect de extracción de video (Phase 0) ahora tiene `if (!prefsHydrated) return;` al inicio — no carga el video hasta que el mobile/desktop decision es final.
+     - El effect de desktop banner check también tiene el guard.
+     - Cambié `devError(...)` por `console.warn(...)` en el catch de extractFrames para que el overlay de Next.js no promueva el error esperado a "Console Error".
+  
+  2. **Limpieza de imports**: quité `devError` no usado de ScrollVideoHero y `MobileBannerHero`/`mounted` no usados de page.tsx.
+
+- **Verificación del fix mobile** (Agent Browser, viewport 540x1230):
+  - Errores de consola: `[]` (vacío) — no hay "Video load failed" ✓
+  - Hero mobile: 4 imágenes de banner cargadas (MobileBannerHero) ✓
+  - Canvas/Video: `canvasPresent:false, videoElements:0` — no se instancia el video en mobile ✓
+
+**Múltiples imágenes por color:**
+
+- **`ColorEntry` interface**: cambió de `imageUrl: string` a `imageUrls: string[]` (array de galería).
+- **`openEdit`**: ahora carga TODAS las imágenes del color desde `ProductImage` (no solo la primera) en `imageUrls`.
+- **`handleSubmit`**: construye `colorImages: Record<colorName, string[]>` con arrays de múltiples URLs (filtra vacías, fallback a imagen principal).
+- **Propagación de imagen principal**: al cambiar la imagen principal, reemplaza solo la PRIMERA imagen de cada color (preserva el resto de la galería).
+- **UI**: por cada color, una sección "Imágenes del color X (N)" con:
+  - Botón "Añadir imagen" (añade entrada vacía al array).
+  - Por cada imagen: badge "Imagen N (principal)" para la primera, botón eliminar individual, y un `MediaUploader` para subir/editar la URL.
+  - Estado vacío: "Sin imágenes. Al guardar, se usará la imagen principal del producto."
+- **API PUT**: ya aceptaba `colorImages: Record<string, string[]>` (array de URLs por color) — no necesitó cambios.
+
+- **Verificación end-to-end** (Agent Browser):
+  - UI del formulario: muestra "Cada color puede tener múltiples imágenes (galería)..." + botones "Añadir imagen" por color + badges "Imagen 1 (principal)" ✓
+  - Subí 2 imágenes de prueba, actualicé el Tank FEARLESS via API con `colorImages: {Negro: [url1, url2], Rojo: [url2, url1]}` ✓
+  - BD: Negro tiene 2 ProductImage, Rojo tiene 2 ProductImage ✓
+  - API pública: `colorImages.Negro` y `colorImages.Rojo` devolvieron arrays de 2 URLs ✓
+  - Tienda (detalle del producto): badge "1/2", 2 miniaturas ("Miniatura 1", "Miniatura 2"), al clic en Miniatura 2 → imagen cambió a "imagen 2", badge "2/2" ✓
+  - Restauré el Tank FEARLESS a su estado original; el cleanup eliminó automáticamente las imágenes de prueba huérfanas ✓
+- `bun run lint`: 0 errors, 0 warnings ✓
+- `dev.log` limpio, sin errores runtime ✓
+
+Stage Summary:
+- **Error de mobile corregido**: el "Video load failed" ya no aparece. El guard `prefsHydrated` asegura que el effect de extracción de video no se ejecute hasta que el mobile/desktop decision sea final. En mobile, `ScrollVideoHero` usa `MobileBannerHero` directamente (sin instanciar video).
+- **Múltiples imágenes por color**: el formulario de productos ahora permite añadir una galería completa de imágenes por cada color. Cada imagen se sube/optimiza individualmente con `MediaUploader`. La galería se refleja en el detalle del producto (miniaturas + navegación).
+- Archivos modificados: `src/components/n10k/ScrollVideoHero.tsx` (guard prefsHydrated + console.warn), `src/app/admin/(dashboard)/productos/page.tsx` (ColorEntry.imageUrls[] + UI de galería multi-imagen + propagación a primera imagen).

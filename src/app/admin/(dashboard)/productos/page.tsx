@@ -71,7 +71,8 @@ const PRODUCT_CATEGORIES = ['Hoodies', 'Suéters', 'Franelas', 'Shorts'];
 interface ColorEntry {
   name: string;
   hex: string;
-  imageUrl: string;
+  /** Multiple images for this color (gallery). At least 1 required. */
+  imageUrls: string[];
 }
 
 interface FormState {
@@ -190,14 +191,17 @@ export default function AdminProductsPage() {
   const openEdit = (p: Product) => {
     setEditingId(p.id);
     // Build colors array from the product's colors + their images.
-    // Each color gets its first image (or the product's main image as fallback).
+    // Each color gets ALL its images (gallery) from ProductImage, or the
+    // product's main image as fallback if none exist for that color.
     const productColors = p.colors && p.colors.length > 0
       ? p.colors.map((c) => {
-          const colorImg = (p.images || []).find((img) => img.colorName === c.name);
+          const colorImgs = (p.images || [])
+            .filter((img) => img.colorName === c.name)
+            .map((img) => img.url);
           return {
             name: c.name,
             hex: c.hex,
-            imageUrl: colorImg ? colorImg.url : p.image,
+            imageUrls: colorImgs.length > 0 ? colorImgs : [p.image],
           };
         })
       : [];
@@ -239,16 +243,16 @@ export default function AdminProductsPage() {
 
     setSaving(true);
     // Build colorImages: Record<colorName, string[]> for the API.
-    // For each color, use its specific imageUrl OR fall back to the main
-    // product image. This ensures the storefront (which displays per-color
-    // images in preference to the main image) always shows the correct image.
+    // Each color can have MULTIPLE images (gallery). Filter out empty URLs
+    // and fall back to the main product image if a color has none.
     const mainImg = form.image.trim();
     const colorImages: Record<string, string[]> = {};
     for (const c of form.colors) {
       if (c.name.trim()) {
-        const img = c.imageUrl.trim() || mainImg;
-        if (img) {
-          colorImages[c.name.trim()] = [img];
+        const imgs = c.imageUrls.map((u) => u.trim()).filter(Boolean);
+        const finalImgs = imgs.length > 0 ? imgs : (mainImg ? [mainImg] : []);
+        if (finalImgs.length > 0) {
+          colorImages[c.name.trim()] = finalImgs;
         }
       }
     }
@@ -705,20 +709,28 @@ export default function AdminProductsPage() {
               onChange={(url) =>
                 setForm((p) => {
                   // When the main product image changes, propagate the change
-                  // to ALL per-color images. The storefront displays per-color
+                  // to the FIRST image of each color (replace the old main
+                  // image wherever it appears). The storefront displays per-color
                   // images (colorImages) in preference to the main `image`, so
                   // if we only update `image` the old per-color images would
-                  // still show. The user can still customize a specific color's
-                  // image afterwards via the per-color MediaUploader below.
+                  // still show.
                   const oldImage = p.image;
                   return {
                     ...p,
                     image: url,
-                    colors: p.colors.map((c) => ({
-                      ...c,
-                      // Update colors that had the old main image OR were empty
-                      imageUrl: c.imageUrl === oldImage || !c.imageUrl ? url : c.imageUrl,
-                    })),
+                    colors: p.colors.map((c) => {
+                      // If the color had no images, start with [newUrl].
+                      // If its first image was the old main image, replace it.
+                      // Otherwise keep its gallery as-is.
+                      if (c.imageUrls.length === 0) {
+                        return { ...c, imageUrls: [url] };
+                      }
+                      const firstUrl = c.imageUrls[0];
+                      if (firstUrl === oldImage || !firstUrl) {
+                        return { ...c, imageUrls: [url, ...c.imageUrls.slice(1)] };
+                      }
+                      return c;
+                    }),
                   };
                 })
               }
@@ -761,7 +773,7 @@ export default function AdminProductsPage() {
                   onClick={() =>
                     setForm((p) => ({
                       ...p,
-                      colors: [...p.colors, { name: '', hex: '#000000', imageUrl: '' }],
+                      colors: [...p.colors, { name: '', hex: '#000000', imageUrls: [] }],
                     }))
                   }
                   className="border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 cursor-pointer h-8"
@@ -771,7 +783,7 @@ export default function AdminProductsPage() {
                 </Button>
               </div>
               <p className="text-[11px] text-zinc-500 -mt-1">
-                Cada color tiene su propia imagen. La tienda muestra la imagen del color seleccionado.
+                Cada color puede tener múltiples imágenes (galería). La tienda muestra la galería del color seleccionado.
               </p>
 
               {form.colors.length === 0 && (
@@ -827,17 +839,80 @@ export default function AdminProductsPage() {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                  <MediaUploader
-                    type="image"
-                    value={color.imageUrl}
-                    onChange={(url) => {
-                      setForm((p) => ({
-                        ...p,
-                        colors: p.colors.map((c, i) => (i === idx ? { ...c, imageUrl: url } : c)),
-                      }));
-                    }}
-                    label={`Imagen del color ${color.name || `#${idx + 1}`}`}
-                  />
+
+                  {/* Gallery: multiple images per color */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
+                        Imágenes del color {color.name || `#${idx + 1}`} ({color.imageUrls.length})
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setForm((p) => ({
+                            ...p,
+                            colors: p.colors.map((c, i) =>
+                              i === idx ? { ...c, imageUrls: [...c.imageUrls, ''] } : c,
+                            ),
+                          }))
+                        }
+                        className="border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 cursor-pointer h-7 text-xs"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Añadir imagen
+                      </Button>
+                    </div>
+
+                    {color.imageUrls.length === 0 && (
+                      <p className="text-[11px] text-zinc-600 py-2 text-center border border-dashed border-zinc-800 rounded-lg">
+                        Sin imágenes. Al guardar, se usará la imagen principal del producto.
+                      </p>
+                    )}
+
+                    {color.imageUrls.map((imgUrl, imgIdx) => (
+                      <div key={imgIdx} className="bg-[#111] border border-zinc-800 rounded-lg p-2">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] text-zinc-500 font-semibold">
+                            Imagen {imgIdx + 1}
+                            {imgIdx === 0 && <span className="text-[#E30613] ml-1">(principal)</span>}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setForm((p) => ({
+                                ...p,
+                                colors: p.colors.map((c, i) =>
+                                  i === idx
+                                    ? { ...c, imageUrls: c.imageUrls.filter((_, j) => j !== imgIdx) }
+                                    : c,
+                                ),
+                              }))
+                            }
+                            className="text-zinc-500 hover:text-red-400 cursor-pointer p-0.5"
+                            aria-label={`Eliminar imagen ${imgIdx + 1}`}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <MediaUploader
+                          type="image"
+                          value={imgUrl}
+                          onChange={(newUrl) => {
+                            setForm((p) => ({
+                              ...p,
+                              colors: p.colors.map((c, i) =>
+                                i === idx
+                                  ? { ...c, imageUrls: c.imageUrls.map((u, j) => (j === imgIdx ? newUrl : u)) }
+                                  : c,
+                              ),
+                            }));
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

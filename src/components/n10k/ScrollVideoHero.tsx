@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Zap, ChevronDown } from 'lucide-react';
 import Image from 'next/image';
 import { usePerformancePrefs } from '@/hooks/use-performance-prefs';
-import { devError } from '@/lib/dev-log';
 import MobileBannerHero from '@/components/n10k/MobileBannerHero';
 import DesktopBannerHero from '@/components/n10k/DesktopBannerHero';
 
@@ -99,6 +98,18 @@ export default function ScrollVideoHero() {
   const useStaticHero = prefs.useStaticHero;
   const isMobile = prefs.isMobile;
 
+  // `prefsHydrated` gates effects that depend on `isMobile`/`useStaticHero`.
+  // During SSR and the first client render, `usePerformancePrefs` returns a
+  // server-default snapshot (isMobile=false). If we start the video-extraction
+  // effect immediately on mobile, it will load the video before the prefs
+  // re-render with isMobile=true — causing "Video load failed" errors.
+  // By waiting for `prefsHydrated`, we ensure the mobile/desktop decision is
+  // final before any video work begins.
+  const [prefsHydrated, setPrefsHydrated] = useState(false);
+  useEffect(() => {
+    setPrefsHydrated(true);
+  }, []);
+
   // Check whether the admin has configured desktop banners. If so, we use
   // the desktop banner carousel instead of the canvas video scroll.
   const [useDesktopBanners, setUseDesktopBanners] = useState(false);
@@ -122,7 +133,9 @@ export default function ScrollVideoHero() {
 
   // ── Desktop: check if admin has configured desktop banners ──
   // If so, switch to the banner carousel and skip the canvas video flow.
+  // Gated on `prefsHydrated` to avoid fetching during the SSR race.
   useEffect(() => {
+    if (!prefsHydrated) return; // wait for the mobile/desktop decision
     if (useMobileBanners) return; // mobile already uses its own banner carousel
     let cancelled = false;
     fetch('/api/banners?placement=desktop')
@@ -143,7 +156,7 @@ export default function ScrollVideoHero() {
     return () => {
       cancelled = true;
     };
-  }, [useMobileBanners]);
+  }, [prefsHydrated, useMobileBanners]);
 
   // ── Mobile: show overlay with entrance animation ──
   useEffect(() => {
@@ -169,7 +182,11 @@ export default function ScrollVideoHero() {
   }, [useStaticHero, useMobileBanners]);
 
   // ── Desktop: Phase 0 — Load video & extract frames ──
+  // Gated on `prefsHydrated` to avoid the SSR hydration race where
+  // `isMobile` is `false` on the server. On mobile, this effect must NOT
+  // run — otherwise it loads the video and fires "Video load failed".
   useEffect(() => {
+    if (!prefsHydrated) return; // wait for the mobile/desktop decision
     if (useStaticHero || useMobileBanners) return;
 
     let alive = true;
@@ -260,7 +277,11 @@ export default function ScrollVideoHero() {
     };
 
     extractFrames().catch((err) => {
-      devError('[ScrollVideoHero] Frame extraction failed:', err);
+      // Video load/extraction can fail on mobile or low-power devices even
+      // with the prefsHydrated guard (e.g., user switches orientation). Use
+      // console.warn instead of devError(console.error) so Next.js's dev
+      // overlay doesn't promote this expected fallback to a "Console Error".
+      console.warn('[ScrollVideoHero] Frame extraction failed:', err);
     });
 
     return () => {
@@ -273,7 +294,7 @@ export default function ScrollVideoHero() {
       video.load();
       document.body.classList.remove(BODY_CLASS);
     };
-  }, [useStaticHero, useMobileBanners, prefs.heroFrameRate, prefs.heroExtractMaxWidth, prefs.heroVideoPreload]);
+  }, [prefsHydrated, useStaticHero, useMobileBanners, prefs.heroFrameRate, prefs.heroExtractMaxWidth, prefs.heroVideoPreload]);
 
   // ── Desktop: Phase 1 — Entrance animation ──
   useEffect(() => {
