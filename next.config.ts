@@ -9,6 +9,13 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200],
     imageSizes: [16, 32, 48, 64, 96, 128, 256],
   },
+  // Allow large uploads for media optimization (images + videos).
+  // Route Handlers parse multipart/form-data; this raises the default 1MB limit.
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '100mb',
+    },
+  },
   // Allow preview panel cross-origin requests
   allowedDevOrigins: [
     'preview-chat-74dbc56d-4ece-4b21-8aaf-46e532a4d0fb.space-z.ai',
@@ -35,6 +42,16 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/brand/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        // Uploaded media is content-hash named → "incorruptible". Safe to cache
+        // for a full year (immutable). If the same image is re-uploaded, the
+        // content hash matches and the URL stays the same; if a different image
+        // is uploaded, it gets a new hash → new URL → instant cache miss.
+        source: '/uploads/:path*',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],

@@ -38,6 +38,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
+import MediaUploader from '@/components/admin/MediaUploader';
 
 interface Banner {
   id: string;
@@ -476,35 +477,13 @@ export default function AdminBannersPage() {
               />
             </div>
 
-            {/* Image URL */}
-            <div>
-              <Label htmlFor="banner-image" className="text-zinc-300 text-xs uppercase tracking-wider">
-                URL de la imagen
-              </Label>
-              <Input
-                id="banner-image"
-                value={formImageUrl}
-                onChange={(e) => setFormImageUrl(e.target.value)}
-                placeholder="/banners/mi-banner.webp o https://..."
-                className="bg-[#0a0a0a] border-zinc-800 text-white mt-1.5 font-mono text-sm"
-              />
-              {/* Preview */}
-              {formImageUrl && (
-                <div className="mt-2 relative w-full h-32 rounded-lg overflow-hidden bg-zinc-900 border border-zinc-800">
-                  <img
-                    src={formImageUrl}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const t = e.target as HTMLImageElement;
-                      t.style.display = 'none';
-                      t.parentElement!.innerHTML =
-                        '<div class="flex items-center justify-center w-full h-full text-zinc-600 text-xs">Imagen no encontrada</div>';
-                    }}
-                  />
-                </div>
-              )}
-            </div>
+            {/* Image upload + URL */}
+            <MediaUploader
+              type="image"
+              value={formImageUrl}
+              onChange={setFormImageUrl}
+              label="Imagen del banner"
+            />
 
             {/* Link */}
             <div>

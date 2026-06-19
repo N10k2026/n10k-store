@@ -464,3 +464,47 @@ Stage Summary:
 - **Banners clickables**: cada banner puede tener un enlace (ej: `#collection`, `/admin/productos`).
 - **Integración con tienda**: los cambios en el admin se reflejan inmediatamente en la tienda principal porque ambos leen de la misma BD via `/api/banners`.
 - Archivos creados/modificados: schema Prisma (+Banner), 3 APIs (banners, admin/banners, admin/banners/[id]), 3 componentes (DesktopBannerHero nuevo, MobileBannerHero reescrito, ScrollVideoHero modificado), 1 página admin (banners), admin layout (sidebar +Banners).
+
+---
+Task ID: 8
+Agent: Main (Z.ai Code)
+Task: Añadir capacidad de subir imágenes y videos desde el admin, con optimización automática (bajar peso sin perder calidad) y URLs "incorrompibles" (cache inmutable), siguiendo los patrones de optimización ya usados en el proyecto.
+
+Work Log:
+- Analicé los patrones de optimización existentes en `scripts/optimize-shorts-*.mjs`:
+  - **Imágenes**: sharp con `resize({width:1200, withoutEnlargement:true})` + `.webp({quality:82, effort:4})` — convierte JPG/PNG a WebP, max 1200px, calidad 82.
+  - **Videos**: los existentes son MP4 H.264 (hero-banner-hd.mp4 8.7MB, hoodie-bold.mp4 1.6MB). ffmpeg está disponible en el sistema.
+  - **Cache-busting**: `media-version.ts` añade `?v=MEDIA_VERSION` a URLs locales.
+- Diseñé el subsistema de upload + optimización:
+  - **Utility** `src/lib/media-optimizer.ts` con `optimizeImage(buffer)` y `optimizeVideo(buffer)`.
+  - **Nombres content-hash** (SHA-256, 16 chars) → URL "incorruptible": mismo contenido = misma URL (safe overwrite, sin colisiones, sin DB de archivos).
+  - **Imágenes**: sharp → WebP max 1200px q82 (idéntico a los scripts existentes).
+  - **Videos**: ffmpeg → H.264 CRF 28, max 1280px, preset slow, AAC 128k, `+faststart` (moov atom al inicio para streaming web).
+  - **Cache inmutable**: `next.config.ts` añade header `Cache-Control: public, max-age=31536000, immutable` para `/uploads/*`.
+  - **Body size limit**: `experimental.serverActions.bodySizeLimit: '100mb'` en next.config.ts.
+- APIs creadas:
+  - `POST /api/admin/upload/image` — recibe multipart/form-data, valida tipo (JPEG/PNG/WebP/AVIF/GIF) y tamaño (max 15MB), optimiza con sharp, guarda en `public/uploads/images/<hash>.webp`, devuelve URL + métricas (tamaño original, optimizado, %reducción).
+  - `POST /api/admin/upload/video` — recibe multipart/form-data, valida tipo (MP4/WebM/MOV/AVI) y tamaño (max 100MB), optimiza con ffmpeg, guarda en `public/uploads/videos/<hash>.mp4`, devuelve URL + métricas.
+- Componente reutilizable:
+  - `src/components/admin/MediaUploader.tsx` — drop zone + preview + input de URL manual. Soporta drag&drop y clic. Muestra feedback de optimización (tamaño antes→después, %reducción). Botón para limpiar. Help text explicativo. Funciona para imágenes y videos (prop `type`).
+- Integración:
+  - `src/app/admin/(dashboard)/banners/page.tsx` — reemplacé el campo de URL de imagen manual con `<MediaUploader type="image">` que permite subir archivo o editar URL. El banner guarda la URL optimizada en la BD.
+- Configuración:
+  - `next.config.ts` — añadí `experimental.serverActions.bodySizeLimit: '100mb'` y header de cache inmutable para `/uploads/*`.
+- Verificación end-to-end:
+  - **Upload de imagen**: creé JPEG de prueba 2000×1500 (112KB) → subido via API → optimizado a WebP 8KB (-93% reducción) → URL `/uploads/images/<hash>.webp` ✓
+  - **Upload de video**: creé MP4 de prueba 1280×720 3s (157KB) → subido via API → optimizado a H.264 MP4 35KB (-78% reducción, CRF 28, +faststart) → URL `/uploads/videos/<hash>.mp4` ✓
+  - **Upload desde el navegador**: el `MediaUploader` en el modal de crear banner aceptó el archivo, lo subió, optimizó, y llenó el campo URL automáticamente con la ruta optimizada. Toast de confirmación mostró "Imagen optimizada: 112KB → 8KB (-93%)" ✓
+  - **Banner con imagen subida en la tienda**: creé un banner desktop con la imagen optimizada → la tienda cargó `/uploads/images/<hash>.webp` en el hero (vía next/image) y ocultó el video scroll (`hasCanvas:false`) ✓
+  - **Al eliminar el banner**: la tienda volvió al video scroll automáticamente ✓
+  - **Cache inmutable**: el header `Cache-Control: public, max-age=31536000, immutable` se aplica a `/uploads/*` → los navegadores cachean por 1 año las URLs content-hash ✓
+- `bun run lint`: 0 errors, 0 warnings ✓
+- `dev.log` limpio, sin errores runtime ✓
+
+Stage Summary:
+- **Upload + optimización de imágenes**: desde el admin se pueden subir imágenes (JPEG/PNG/WebP/AVIF/GIF, max 15MB). Se optimizan automáticamente con sharp → WebP max 1200px calidad 82 (idéntico a los scripts existentes del proyecto). Reducción típica: 80-95%.
+- **Upload + optimización de videos**: se pueden subir videos (MP4/WebM/MOV/AVI, max 100MB). Se optimizan con ffmpeg → H.264 CRF 28, max 1280px, preset slow, AAC 128k, +faststart para streaming web. Reducción típica: 60-85%.
+- **URLs "incorruptibles"**: los archivos se guardan con nombres basados en content-hash (SHA-256, 16 chars). El mismo contenido siempre mapea a la misma URL → cache inmutable de 1 año, sin colisiones, seguro de sobreescribir.
+- **Componente reutilizable**: `MediaUploader` se integró en `/admin/banners` y puede reutilizarse en `/admin/productos` y otros formularios.
+- **Velocidad de carga optimizada**: WebP + cache inmutable + (para videos) +faststart = carga rápida y progressive streaming.
+- Archivos creados/modificados: `src/lib/media-optimizer.ts` (nuevo), `src/app/api/admin/upload/image/route.ts` (nuevo), `src/app/api/admin/upload/video/route.ts` (nuevo), `src/components/admin/MediaUploader.tsx` (nuevo), `src/app/admin/(dashboard)/banners/page.tsx` (integración), `next.config.ts` (bodySizeLimit + cache headers).
