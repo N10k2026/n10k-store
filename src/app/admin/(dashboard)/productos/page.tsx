@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import {
   Plus,
@@ -9,6 +9,8 @@ import {
   Trash2,
   Package,
   Star,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,6 +59,7 @@ interface Product {
   video: string | null;
   isNew: boolean;
   isBestSeller: boolean;
+  hidden?: boolean;
   rating: number;
   sortOrder: number;
   createdAt: string;
@@ -132,6 +135,7 @@ export default function AdminProductsPage() {
 
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Todos');
+  const [genderTab, setGenderTab] = useState<'hombre' | 'mujer'>('hombre');
 
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -183,6 +187,39 @@ export default function AdminProductsPage() {
       }
       return { ...prev, name, slug: slugify(name) };
     });
+  };
+
+  // Filter products by the active gender tab
+  const genderFilteredProducts = useMemo(
+    () => products.filter((p) => (p.gender ?? 'hombre') === genderTab),
+    [products, genderTab],
+  );
+
+  // Toggle product visibility (hidden) via API
+  const toggleHidden = async (p: Product) => {
+    // Optimistic update
+    setProducts((prev) =>
+      prev.map((item) =>
+        item.id === p.id ? { ...item, hidden: !item.hidden } : item,
+      ),
+    );
+    try {
+      const res = await fetch(`/api/admin/products/${p.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hidden: !p.hidden }),
+      });
+      if (!res.ok) throw new Error('Error al actualizar');
+      toast.success(p.hidden ? 'Producto visible' : 'Producto ocultado');
+    } catch (e) {
+      // Revert on error
+      setProducts((prev) =>
+        prev.map((item) =>
+          item.id === p.id ? { ...item, hidden: p.hidden } : item,
+        ),
+      );
+      toast.error(e instanceof Error ? e.message : 'Error');
+    }
   };
 
   const openCreate = () => {
@@ -363,6 +400,32 @@ export default function AdminProductsPage() {
         </Button>
       </div>
 
+      {/* Gender tabs — Hombre / Mujer */}
+      <div className="flex items-center gap-2">
+        <div className="inline-flex bg-[#111] border border-zinc-800 rounded-lg p-1">
+          {(['hombre', 'mujer'] as const).map((g) => {
+            const count = products.filter((p) => (p.gender ?? 'hombre') === g).length;
+            const isActive = genderTab === g;
+            return (
+              <button
+                key={g}
+                onClick={() => setGenderTab(g)}
+                className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-[#E30613] text-white'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                {g === 'hombre' ? 'Hombre' : 'Mujer'}
+                <span className={`ml-2 text-xs ${isActive ? 'text-white/70' : 'text-zinc-600'}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="bg-[#111] border border-zinc-800 rounded-xl p-4 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
@@ -401,12 +464,14 @@ export default function AdminProductsPage() {
         <div className="flex items-center justify-center py-20">
           <div className="animate-spin h-8 w-8 border-2 border-[#E30613] border-t-transparent rounded-full" />
         </div>
-      ) : products.length === 0 ? (
+      ) : genderFilteredProducts.length === 0 ? (
         <div className="bg-[#111] border border-zinc-800 rounded-xl p-10 text-center">
           <Package className="h-10 w-10 text-zinc-600 mx-auto mb-3" />
-          <p className="text-sm text-zinc-400 font-semibold">No hay productos</p>
+          <p className="text-sm text-zinc-400 font-semibold">
+            No hay productos de {genderTab}
+          </p>
           <p className="text-xs text-zinc-600 mt-1">
-            Crea tu primer producto para verlo aquí
+            Crea un producto de {genderTab} para verlo aquí
           </p>
         </div>
       ) : (
@@ -427,10 +492,10 @@ export default function AdminProductsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/60">
-                  {products.map((p) => (
+                  {genderFilteredProducts.map((p) => (
                     <tr
                       key={p.id}
-                      className="hover:bg-zinc-800/30 transition-colors"
+                      className={`hover:bg-zinc-800/30 transition-colors ${p.hidden ? 'opacity-50' : ''}`}
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
@@ -473,7 +538,12 @@ export default function AdminProductsPage() {
                               TOP VENTAS
                             </span>
                           )}
-                          {!p.isNew && !p.isBestSeller && (
+                          {p.hidden && (
+                            <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-700/40 text-zinc-400 border border-zinc-600/40">
+                              OCULTO
+                            </span>
+                          )}
+                          {!p.isNew && !p.isBestSeller && !p.hidden && (
                             <span className="text-xs text-zinc-600">—</span>
                           )}
                         </div>
@@ -494,6 +564,16 @@ export default function AdminProductsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className={`h-8 w-8 ${p.hidden ? 'text-zinc-600 hover:text-green-400 hover:bg-green-500/10' : 'text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10'}`}
+                            onClick={() => toggleHidden(p)}
+                            aria-label={p.hidden ? 'Mostrar producto' : 'Ocultar producto'}
+                            title={p.hidden ? 'Mostrar en tienda' : 'Ocultar de tienda'}
+                          >
+                            {p.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
                           <Button
                             size="icon"
                             variant="ghost"
@@ -523,10 +603,10 @@ export default function AdminProductsPage() {
 
           {/* Mobile cards */}
           <div className="md:hidden space-y-3">
-            {products.map((p) => (
+            {genderFilteredProducts.map((p) => (
               <div
                 key={p.id}
-                className="bg-[#111] border border-zinc-800 rounded-xl p-4"
+                className={`bg-[#111] border border-zinc-800 rounded-xl p-4 ${p.hidden ? 'opacity-50' : ''}`}
               >
                 <div className="flex items-start gap-3">
                   <img
@@ -574,6 +654,16 @@ export default function AdminProductsPage() {
                     <span>{formatDate(p.createdAt)}</span>
                   </div>
                   <div className="flex items-center gap-1">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className={`h-8 w-8 ${p.hidden ? 'text-zinc-600 hover:text-green-400 hover:bg-green-500/10' : 'text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10'}`}
+                      onClick={() => toggleHidden(p)}
+                      aria-label={p.hidden ? 'Mostrar producto' : 'Ocultar producto'}
+                      title={p.hidden ? 'Mostrar en tienda' : 'Ocultar de tienda'}
+                    >
+                      {p.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
                     <Button
                       size="icon"
                       variant="ghost"

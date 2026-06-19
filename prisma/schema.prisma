@@ -20,6 +20,7 @@ model Product {
   video         String?
   isNew         Boolean  @default(false)
   isBestSeller  Boolean  @default(false)
+  hidden        Boolean  @default(false)
   rating        Float    @default(0)
   sortOrder     Int      @default(0)
   createdAt     DateTime @default(now())
@@ -33,6 +34,7 @@ model Product {
   @@index([category])
   @@index([gender])
   @@index([gender, category])
+  @@index([hidden])
   @@index([isNew, sortOrder])
 }
 

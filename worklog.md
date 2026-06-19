@@ -810,3 +810,40 @@ Stage Summary:
 - **API**: filtra por `?gender=hombre|mujer`, y todos los productos incluyen el campo `gender` en la respuesta.
 - **Textos dinámicos**: kicker ("Ropa de Caballero"/"Ropa de Dama"), descripción, y "Los Más Vendidos"/"Lo Más Vendido" cambian según el género activo.
 - Archivos modificados: `prisma/schema.prisma` (+gender), `src/lib/static-products.ts` (+6 productos mujer + gender en tipo), `prisma/seed.ts` (+gender), `src/app/api/products/route.ts` (+filtro gender + select), `src/lib/product-utils.ts` (+gender en transform), `src/lib/store.ts` (+activeGender state), `src/components/n10k/ProductGrid.tsx` (+selector género + filtro), `src/components/n10k/FeaturedProducts.tsx` (+filtro género), `src/app/api/admin/products/route.ts` (+gender POST), `src/app/api/admin/products/[id]/route.ts` (+gender PUT), `src/app/admin/(dashboard)/productos/page.tsx` (+campo género formulario).
+
+---
+Task ID: 16
+Agent: Main (Z.ai Code)
+Task: (1) Permitir ocultar productos desde el panel admin para que no se vean en la web principal. (2) Dividir la lista de productos del admin en pestañas Hombre/Mujer.
+
+Work Log:
+- **Schema Prisma**: añadí campo `hidden Boolean @default(false)` al modelo Product + índice `@@index([hidden])`. Ejecuté `db:push` + `db:generate`.
+- **API pública (`/api/products`)**:
+  - Añadí `hidden: true` al `productListSelect` para que el campo esté disponible.
+  - Añadí `where.hidden = false` al filtro del GET — la tienda NUNCA muestra productos ocultos.
+- **transformProduct**: añadí `hidden?: boolean | null` al tipo + `hidden` al resultado.
+- **API admin PUT (`/api/admin/products/[id]`)**: acepta `hidden` (boolean) en el body y lo actualiza en la BD.
+- **Frontend admin (`/admin/productos`)**:
+  - Añadí `hidden?: boolean` al interface `Product`.
+  - Añadí estado `genderTab` ('hombre' | 'mujer', default 'hombre') + `useMemo` `genderFilteredProducts` que filtra por el genderTab activo.
+  - Añadí función `toggleHidden(p)` con actualización optimista + PUT a la API + toast de feedback + revert on error.
+  - **Tabs Hombre/Mujer**: dos botones en la parte superior con conteo de productos por género. Al clic, cambia `genderTab` y la lista se filtra.
+  - **Toggle ocultar/mostrar**: botón con icono `Eye`/`EyeOff` en cada producto (desktop tabla y mobile cards). Productos ocultos se muestran con `opacity-50` y badge "OCULTO".
+  - Cambié `products.map` por `genderFilteredProducts.map` en ambas vistas (desktop table + mobile cards).
+  - Estado vacío dinámico: "No hay productos de {genderTab}".
+  - Imports: añadí `useMemo`, `Eye`, `EyeOff`.
+- **Verificación con Agent Browser**:
+  - Tabs Hombre/Mujer aparecen con conteos (Hombre 6, Mujer 6) ✓
+  - Tab Hombre: muestra productos masculinos (Tank FEARLESS, Hoodie BOLD, etc.) ✓
+  - Tab Mujer: muestra productos femeninos (Tank GLOW, Tee RADIANCE, Hoodie BLOOM, etc.) ✓
+  - Toggle ocultar: al clic en botón ocultar del Hoodie BLOOM → badge "OCULTO" + toast "Producto ocultado" ✓
+  - API pública: productos de mujer pasaron de 6 a 5, "Hoodie BLOOM presente: False" ✓
+  - Tienda principal: Hoodie BLOOM NO aparece en la sección Mujer (`bloomFound: false`), otros productos de mujer sí aparecen ✓
+  - Restauré Hoodie BLOOM via API → volvió a 6 productos de mujer públicos ✓
+- `bun run lint`: 0 errors, 0 warnings ✓
+
+Stage Summary:
+- **Ocultar productos**: el admin puede ocultar/mostrar productos con un botón (ojo). Los productos ocultos no aparecen en la tienda principal (API pública filtra `hidden=false`). En el admin se ven con opacity reducida + badge "OCULTO".
+- **Tabs Hombre/Mujer**: la lista de productos del admin se divide en dos pestañas con conteos. Al cambiar de tab, la lista se filtra por género. El filtrado es independiente del filtro de búsqueda y categoría existente.
+- Actualización optimista: el toggle refleja el cambio inmediatamente en la UI; si la API falla, revierte.
+- Archivos modificados: `prisma/schema.prisma` (+hidden), `src/app/api/products/route.ts` (+hidden select + filtro), `src/lib/product-utils.ts` (+hidden en transform), `src/app/api/admin/products/[id]/route.ts` (+hidden PUT), `src/app/admin/(dashboard)/productos/page.tsx` (tabs género + toggle hidden + badge OCULTO).

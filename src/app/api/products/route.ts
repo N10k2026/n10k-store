@@ -22,6 +22,7 @@ const productListSelect = {
   video: true,
   isNew: true,
   isBestSeller: true,
+  hidden: true,
   rating: true,
   images: {
     orderBy: { sortOrder: 'asc' as const },
@@ -60,6 +61,8 @@ export async function GET(request: NextRequest) {
   });
 
   const where: Prisma.ProductWhereInput = {};
+  // The public storefront never shows hidden products (admin can hide them).
+  where.hidden = false;
   if (category && category !== 'Todos') where.category = category;
   if (gender === 'hombre' || gender === 'mujer') where.gender = gender;
   if (isNew === 'true') where.isNew = true;

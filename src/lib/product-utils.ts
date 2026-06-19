@@ -70,6 +70,7 @@ type DbProductWithRelations = {
   video: string | null;
   isNew: boolean;
   isBestSeller: boolean;
+  hidden?: boolean | null;
   rating: number | null;
   images: { url: string; colorName: string | null; sortOrder: number }[];
   colors: { name: string; hex: string }[];
