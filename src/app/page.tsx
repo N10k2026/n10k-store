@@ -136,7 +136,7 @@ export default function Home() {
               }}
             />
             <Marquee
-              texts={['N10K', 'CABALLERO', 'LIMITLESS']}
+              texts={['N10K', 'LIVE LIMITLESS', 'STYLE']}
               speed={80}
               separator="✦"
             />
