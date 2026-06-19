@@ -10,11 +10,9 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256],
   },
   // Allow large uploads for media optimization (images + videos).
-  // Route Handlers parse multipart/form-data; this raises the default 1MB limit.
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '100mb',
-    },
+  // Next.js 16: serverActions is top-level (not under experimental).
+  serverActions: {
+    bodySizeLimit: '100mb',
   },
   // Allow preview panel cross-origin requests
   allowedDevOrigins: [
