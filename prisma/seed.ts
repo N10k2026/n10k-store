@@ -16,6 +16,7 @@ async function main() {
         name: p.name,
         slug: p.slug,
         category: p.category,
+        gender: p.gender ?? 'hombre',
         price: p.price,
         originalPrice: p.originalPrice ?? null,
         image: p.image,
@@ -29,6 +30,7 @@ async function main() {
       update: {
         name: p.name,
         category: p.category,
+        gender: p.gender ?? 'hombre',
         price: p.price,
         originalPrice: p.originalPrice ?? null,
         image: p.image,

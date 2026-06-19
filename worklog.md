@@ -755,3 +755,58 @@ Stage Summary:
 - **Error de mobile corregido**: el "Video load failed" ya no aparece. El guard `prefsHydrated` asegura que el effect de extracción de video no se ejecute hasta que el mobile/desktop decision sea final. En mobile, `ScrollVideoHero` usa `MobileBannerHero` directamente (sin instanciar video).
 - **Múltiples imágenes por color**: el formulario de productos ahora permite añadir una galería completa de imágenes por cada color. Cada imagen se sube/optimiza individualmente con `MediaUploader`. La galería se refleja en el detalle del producto (miniaturas + navegación).
 - Archivos modificados: `src/components/n10k/ScrollVideoHero.tsx` (guard prefsHydrated + console.warn), `src/app/admin/(dashboard)/productos/page.tsx` (ColorEntry.imageUrls[] + UI de galería multi-imagen + propagación a primera imagen).
+
+---
+Task ID: 15
+Agent: Main (Z.ai Code)
+Task: Crear sección para mujeres — dividir colecciones entre hombres y mujeres con las mismas categorías (Hoodies, Suéters, Franelas, Shorts).
+
+Work Log:
+- **Schema Prisma**: añadí campo `gender String @default("hombre")` al modelo Product + índices `@@index([gender])` y `@@index([gender, category])`. Ejecuté `db:push` + `db:generate`.
+- **Catálogo (static-products.ts)**:
+  - Añadí `gender?: 'hombre' | 'mujer'` al tipo `StaticProduct`.
+  - Marqué los 6 productos existentes con `gender: 'hombre'`.
+  - Añadí 6 productos de mujer (mismas categorías que hombre):
+    - **Hoodie BLOOM** (Hoodies, $50) — best seller, nuevo
+    - **Sweater VELVET** (Suéters, $40) — nuevo
+    - **Tee RADIANCE** (Franelas, $30) — best seller, nuevo
+    - **Tank GLOW** (Franelas, $25)
+    - **Shorts BREEZE Mujer** (Shorts, $35) — nuevo
+    - **Sweater AURA** (Suéters, $45, originalPrice $60) — best seller, edición limitada
+  - Cada producto de mujer tiene 2 colores con galerías de imágenes, tallas XS-XL, descripciones adaptadas.
+- **Seed (prisma/seed.ts)**: añadí `gender: p.gender ?? 'hombre'` al create y update del upsert. Ejecuté `db:seed` — 12 productos sembrados (6 hombre + 6 mujer).
+- **API pública (`/api/products`)**:
+  - Añadí `gender` al `productListSelect` para que se devuelva en la respuesta.
+  - Añadí filtro `?gender=hombre|mujer` en el GET handler.
+- **transformProduct (`product-utils.ts`)**: añadí `gender: dbProduct.gender ?? 'hombre'` al resultado + `gender?: string | null` al tipo `DbProductWithRelations`.
+- **Store (`store.ts`)**:
+  - Añadí `gender?: 'hombre' | 'mujer'` al interface `Product`.
+  - Añadí `genders` const, `Gender` type.
+  - Añadí estado `activeGender: Gender` (default 'hombre') + `setActiveGender` al store.
+- **ProductGrid.tsx**:
+  - Filtra productos por `activeGender` además de categoría.
+  - Añadí selector de género (toggle Hombre/Mujer) al inicio de la sección Colección, con estilos activo/inactivo.
+  - Textos dinámicos: "Ropa de Caballero" / "Ropa de Dama", descripción masculina/femenina.
+  - Contadores de categoría respetan el género activo.
+  - Al cambiar de género, resetea la categoría a 'Todos'.
+- **FeaturedProducts.tsx**: filtra best sellers por `activeGender`. Kicker dinámico: "Los Más Vendidos" / "Lo Más Vendido".
+- **Admin productos**:
+  - API POST/PUT aceptan `gender` (valida 'hombre'|'mujer', default 'hombre').
+  - Formulario: añadí selector "Género" (Hombre/Mujer) antes de Categoría, con `gender` en FormState, EMPTY_FORM, openEdit, y payload de handleSubmit.
+- **Verificación con Agent Browser** (desktop 1280x720):
+  - Selector Hombre/Mujer visible en la sección Colección ✓
+  - Estado inicial: Hombre activo, muestra "ROPA DE CABALLERO", 6 productos de hombre, categorías con conteos masculinos ✓
+  - Al clic en Mujer: cambia a activo, "ROPA DE DAMA", 6 productos de mujer (Hoodie BLOOM, Sweater VELVET, Tee RADIANCE, Tank GLOW, Shorts BREEZE Mujer, Sweater AURA), categorías con conteos femeninos ✓
+  - Productos Destacados: muestra productos del género activo (mujer → Hoodie BLOOM, Tee RADIANCE, Sweater AURA) ✓
+  - Kicker dinámico: "LO MÁS VENDIDO" en mujer, "LOS MÁS VENDIDOS" en hombre ✓
+- API verificada: `?gender=mujer` devuelve 6 productos, `?gender=hombre` devuelve 6 productos ✓
+- `bun run lint`: 0 errors, 0 warnings ✓
+- `dev.log` limpio ✓
+
+Stage Summary:
+- **Sección de mujeres creada**: la tienda ahora tiene un selector Hombre/Mujer en la sección Colección que filtra todo el catálogo (ProductGrid + FeaturedProducts) por género.
+- **6 productos de mujer** sembrados con las mismas categorías que hombre (Hoodies, Suéters, Franelas, Shorts), cada uno con 2 colores, galerías de imágenes, tallas XS-XL, y descripciones adaptadas. Todos editables desde el admin.
+- **Admin**: el formulario de productos ahora incluye un campo "Género" (Hombre/Mujer) para asignar productos a cada sección.
+- **API**: filtra por `?gender=hombre|mujer`, y todos los productos incluyen el campo `gender` en la respuesta.
+- **Textos dinámicos**: kicker ("Ropa de Caballero"/"Ropa de Dama"), descripción, y "Los Más Vendidos"/"Lo Más Vendido" cambian según el género activo.
+- Archivos modificados: `prisma/schema.prisma` (+gender), `src/lib/static-products.ts` (+6 productos mujer + gender en tipo), `prisma/seed.ts` (+gender), `src/app/api/products/route.ts` (+filtro gender + select), `src/lib/product-utils.ts` (+gender en transform), `src/lib/store.ts` (+activeGender state), `src/components/n10k/ProductGrid.tsx` (+selector género + filtro), `src/components/n10k/FeaturedProducts.tsx` (+filtro género), `src/app/api/admin/products/route.ts` (+gender POST), `src/app/api/admin/products/[id]/route.ts` (+gender PUT), `src/app/admin/(dashboard)/productos/page.tsx` (+campo género formulario).

@@ -19,6 +19,8 @@ export type StaticProduct = {
   name: string;
   slug: string;
   category: string;
+  /** 'hombre' | 'mujer' — used to split the catalog into gendered sections. */
+  gender?: 'hombre' | 'mujer';
   price: number;
   originalPrice?: number;
   image: string;
@@ -42,6 +44,7 @@ export const staticProducts: StaticProduct[] = [
     name: 'Shorts BREEZE',
     slug: 'shorts-breeze',
     category: 'Shorts',
+    gender: 'hombre',
     price: 40,
     image: '/products/shorts-breeze/aguamarina-1.webp',
     images: [
@@ -149,6 +152,7 @@ export const staticProducts: StaticProduct[] = [
     name: 'Hoodie BOLD',
     slug: 'hoodie-bold',
     category: 'Hoodies',
+    gender: 'hombre',
     price: 50,
     image: '/products/hoodie-vinotinto/1.webp',
     images: [
@@ -206,6 +210,7 @@ export const staticProducts: StaticProduct[] = [
     name: 'Sweater AFTER DARK',
     slug: 'sweater-after-dark',
     category: 'Suéters',
+    gender: 'hombre',
     price: 40,
     image: '/products/sueter-negro.webp',
     images: [
@@ -245,6 +250,7 @@ export const staticProducts: StaticProduct[] = [
     name: 'Sweater PEARL | Exclusive Drop',
     slug: 'sweater-pearl-exclusive-drop',
     category: 'Suéters',
+    gender: 'hombre',
     price: 40,
     image: '/products/sueter-perla.webp',
     images: [
@@ -270,6 +276,7 @@ export const staticProducts: StaticProduct[] = [
     name: 'Tee LIMITLESS',
     slug: 'tee-limitless',
     category: 'Franelas',
+    gender: 'hombre',
     price: 35,
     image: '/products/tee-negro.webp',
     images: [
@@ -294,6 +301,7 @@ export const staticProducts: StaticProduct[] = [
     name: 'Tank FEARLESS',
     slug: 'tank-fearless',
     category: 'Franelas',
+    gender: 'hombre',
     price: 25,
     image: '/products/tank-negro.webp',
     images: [
@@ -312,5 +320,158 @@ export const staticProducts: StaticProduct[] = [
     description: 'Franelilla para caballero con actitud. Tela suave y stretch, sin disculpas. Muestra lo que quieres, esconde lo que te da la gana.',
     isNew: false,
     isBestSeller: false,
+  },
+
+  // ===== MUJER =====
+  {
+    id: 'hoodie-bloom',
+    name: 'Hoodie BLOOM',
+    slug: 'hoodie-bloom',
+    category: 'Hoodies',
+    gender: 'mujer',
+    price: 50,
+    image: '/products/hoodie-blanco.webp',
+    images: [
+      '/products/hoodie-blanco.webp',
+      '/products/hoodie-blanco-2.webp',
+    ],
+    colorImages: {
+      'Blanco': ['/products/hoodie-blanco.webp', '/products/hoodie-blanco-2.webp'],
+      'Negro': ['/products/hoodie-negro.webp', '/products/hoodie-negro-2.webp'],
+    },
+    colors: [
+      { name: 'Blanco', hex: '#FFFFFF' },
+      { name: 'Negro', hex: '#0A0A0A' },
+    ],
+    sizes: ['XS', 'S', 'M', 'L'],
+    description: 'Hoodie oversize para mujer con corte femenino y capucha ajustable. Algodón premium para los días frescos con estilo urbano y actitud N10K.',
+    isNew: true,
+    isBestSeller: true,
+  },
+  {
+    id: 'sweater-velvet',
+    name: 'Sweater VELVET',
+    slug: 'sweater-velvet',
+    category: 'Suéters',
+    gender: 'mujer',
+    price: 40,
+    image: '/products/sueter-perla.webp',
+    images: [
+      '/products/sueter-perla.webp',
+      '/products/sueter-perla-2.webp',
+    ],
+    colorImages: {
+      'Perla': ['/products/sueter-perla.webp', '/products/sueter-perla-2.webp'],
+      'Rosa': ['/products/sueter-rosa.webp', '/products/sueter-rosa-03.webp'],
+    },
+    colors: [
+      { name: 'Perla', hex: '#E8E0D8' },
+      { name: 'Rosa', hex: '#F5C6CB' },
+    ],
+    sizes: ['XS', 'S', 'M', 'L'],
+    description: 'Suéter de punto suave para mujer con caída elegante. Textura premium que abraza la silueta sin apretar. Perfecto para un look urbano femenino.',
+    isNew: true,
+    isBestSeller: false,
+  },
+  {
+    id: 'tee-radiance',
+    name: 'Tee RADIANCE',
+    slug: 'tee-radiance',
+    category: 'Franelas',
+    gender: 'mujer',
+    price: 30,
+    image: '/products/tee-blanco.webp',
+    images: [
+      '/products/tee-blanco.webp',
+      '/products/tee-negro.webp',
+    ],
+    colorImages: {
+      'Blanco': ['/products/tee-blanco.webp'],
+      'Negro': ['/products/tee-negro.webp'],
+    },
+    colors: [
+      { name: 'Blanco', hex: '#FFFFFF' },
+      { name: 'Negro', hex: '#0A0A0A' },
+    ],
+    sizes: ['XS', 'S', 'M', 'L'],
+    description: 'Franela crop para mujer con estampado N10K. Algodón peinado, corte ajustado y estilo sin límites. Para la mujer que ilumina la calle con su presencia.',
+    isNew: true,
+    isBestSeller: true,
+  },
+  {
+    id: 'tank-glow',
+    name: 'Tank GLOW',
+    slug: 'tank-glow',
+    category: 'Franelas',
+    gender: 'mujer',
+    price: 25,
+    image: '/products/tank-rojo.webp',
+    images: [
+      '/products/tank-rojo.webp',
+      '/products/tank-negro.webp',
+    ],
+    colorImages: {
+      'Rojo': ['/products/tank-rojo.webp'],
+      'Negro': ['/products/tank-negro.webp'],
+    },
+    colors: [
+      { name: 'Rojo', hex: '#E31E24' },
+      { name: 'Negro', hex: '#0A0A0A' },
+    ],
+    sizes: ['XS', 'S', 'M', 'L'],
+    description: 'Top tipo tank para mujer con tiras finas y corte fresco. Tela suave que sigue tus movimientos. Brilla con confianza, sin pedir permiso.',
+    isNew: false,
+    isBestSeller: false,
+  },
+  {
+    id: 'shorts-breeze-w',
+    name: 'Shorts BREEZE Mujer',
+    slug: 'shorts-breeze-mujer',
+    category: 'Shorts',
+    gender: 'mujer',
+    price: 35,
+    image: '/products/short-gris.webp',
+    images: [
+      '/products/short-gris.webp',
+      '/products/short-negro.webp',
+    ],
+    colorImages: {
+      'Gris': ['/products/short-gris.webp'],
+      'Negro': ['/products/short-negro.webp'],
+    },
+    colors: [
+      { name: 'Gris', hex: '#6B7280' },
+      { name: 'Negro', hex: '#0A0A0A' },
+    ],
+    sizes: ['XS', 'S', 'M', 'L'],
+    description: 'Shorts deportivos para mujer con tiro alto y tela ligera. Comodidad que se mueve contigo, del entrenamiento al streetwear sin parar.',
+    isNew: true,
+    isBestSeller: false,
+  },
+  {
+    id: 'sweater-aura',
+    name: 'Sweater AURA',
+    slug: 'sweater-aura',
+    category: 'Suéters',
+    gender: 'mujer',
+    price: 45,
+    originalPrice: 60,
+    image: '/products/sueter-blanco.webp',
+    images: [
+      '/products/sueter-blanco.webp',
+      '/products/sueter-blanco-2.webp',
+    ],
+    colorImages: {
+      'Blanco': ['/products/sueter-blanco.webp', '/products/sueter-blanco-2.webp'],
+      'Negro': ['/products/sueter-negro.webp', '/products/sueter-negro-2.webp'],
+    },
+    colors: [
+      { name: 'Blanco', hex: '#FFFFFF' },
+      { name: 'Negro', hex: '#0A0A0A' },
+    ],
+    sizes: ['XS', 'S', 'M', 'L'],
+    description: 'Suéter exclusivo para mujer, edición limitada. Tejido cálido con detalle de manguito acampanado. Un aura de elegancia que no pasa desapercibida.',
+    isNew: false,
+    isBestSeller: true,
   },
 ];

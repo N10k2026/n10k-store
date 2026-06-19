@@ -27,6 +27,7 @@ export async function PUT(
     name,
     slug,
     category,
+    gender,
     price,
     originalPrice,
     image,
@@ -139,6 +140,9 @@ export async function PUT(
       ...(name != null ? { name: String(name) } : {}),
       ...(slug != null ? { slug: String(slug) } : {}),
       ...(category != null ? { category: String(category) } : {}),
+      ...(gender != null && ['hombre', 'mujer'].includes(String(gender))
+        ? { gender: String(gender) }
+        : {}),
       ...(price != null ? { price: Number(price) } : {}),
       ...(originalPrice != null ? { originalPrice: Number(originalPrice) } : {}),
       ...(image != null ? { image: String(image) } : {}),

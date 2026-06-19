@@ -14,6 +14,7 @@ const productListSelect = {
   name: true,
   slug: true,
   category: true,
+  gender: true,
   price: true,
   originalPrice: true,
   image: true,
@@ -50,6 +51,7 @@ function paginateArray<T>(items: T[], skip: number, take: number) {
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const category = searchParams.get('category');
+  const gender = searchParams.get('gender'); // 'hombre' | 'mujer'
   const isNew = searchParams.get('new');
   const paginated = searchParams.get('paginated') === 'true';
   const pagination = parsePagination(searchParams, {
@@ -59,6 +61,7 @@ export async function GET(request: NextRequest) {
 
   const where: Prisma.ProductWhereInput = {};
   if (category && category !== 'Todos') where.category = category;
+  if (gender === 'hombre' || gender === 'mujer') where.gender = gender;
   if (isNew === 'true') where.isNew = true;
 
   try {

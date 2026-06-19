@@ -62,6 +62,7 @@ type DbProductWithRelations = {
   name: string;
   slug: string;
   category: string;
+  gender?: string | null;
   price: number;
   originalPrice: number | null;
   image: string;
@@ -100,6 +101,7 @@ export function transformProduct(dbProduct: DbProductWithRelations) {
     name: dbProduct.name,
     slug: dbProduct.slug,
     category: dbProduct.category,
+    gender: dbProduct.gender ?? 'hombre',
     price: dbProduct.price,
     originalPrice: dbProduct.originalPrice ?? undefined,
     image: versionMediaUrl(dbProduct.image) as string,

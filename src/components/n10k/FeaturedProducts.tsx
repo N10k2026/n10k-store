@@ -20,6 +20,7 @@ function getImagesForColor(product: Product, colorName: string): string[] {
 
 export default function FeaturedProducts() {
   const products = useCartStore((state) => state.products);
+  const activeGender = useCartStore((state) => state.activeGender);
   const setSelectedProduct = useCartStore((state) => state.setSelectedProduct);
   const setPreselectedColor = useCartStore((state) => state.setPreselectedColor);
   const setDetailOpen = useCartStore((state) => state.setDetailOpen);
@@ -31,14 +32,15 @@ export default function FeaturedProducts() {
   const isVisible = useScrollVisibleWithRef(sectionRef, 0.1);
   useStaggerChildren(sectionRef, isVisible, '.fp-card', 0.1);
 
-  // Featured products: best sellers, or fallback to first 4
+  // Featured products: best sellers of the active gender, or fallback to first 4
   const featuredProducts = useMemo(() => {
-    const bestSellers = products.filter((p) => p.isBestSeller);
+    const genderProducts = products.filter((p) => (p.gender ?? 'hombre') === activeGender);
+    const bestSellers = genderProducts.filter((p) => p.isBestSeller);
     if (bestSellers.length >= 3) return bestSellers.slice(0, 4);
     // Fill with other products if not enough best sellers
-    const remaining = products.filter((p) => !p.isBestSeller);
+    const remaining = genderProducts.filter((p) => !p.isBestSeller);
     return [...bestSellers, ...remaining].slice(0, 4);
-  }, [products]);
+  }, [products, activeGender]);
 
   // Open the product detail dialog (gallery, sizes, size guide, colors, etc.)
   const handleViewDetail = (product: Product, colorName?: string) => {
@@ -95,7 +97,7 @@ export default function FeaturedProducts() {
             <BlurIn delay={0.1} duration={0.6}>
               <p className="text-[.65rem] font-montserrat-bold tracking-[.2em] uppercase text-[#E30613] mb-2 flex items-center gap-2.5">
                 <span className="inline-block w-5 h-[1.5px] bg-[#E30613]" />
-                Los Más Vendidos
+                {activeGender === 'hombre' ? 'Los Más Vendidos' : 'Lo Más Vendido'}
               </p>
             </BlurIn>
             <SplitWords

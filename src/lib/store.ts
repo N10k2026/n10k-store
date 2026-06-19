@@ -9,6 +9,7 @@ export interface Product {
   id: string;
   name: string;
   category: string;
+  gender?: 'hombre' | 'mujer';
   price: number;
   originalPrice?: number;
   image: string;
@@ -43,6 +44,8 @@ export interface WishlistItem {
 }
 
 export const categories = ["Todos", "Hoodies", "Suéters", "Franelas", "Shorts"];
+export const genders = ["hombre", "mujer"] as const;
+export type Gender = (typeof genders)[number];
 
 // Guard to prevent concurrent fetch calls (mutable object so importers can modify)
 export const fetchGuard = { inProgress: false };
@@ -58,6 +61,9 @@ interface CartStore {
   isDetailOpen: boolean;
   selectedProduct: Product | null;
   preselectedColor: string | null;
+  /** Active gender filter for the storefront catalog ('hombre' | 'mujer'). */
+  activeGender: Gender;
+  setActiveGender: (gender: Gender) => void;
   // Recently viewed
   recentlyViewed: string[];
   // Search modal
@@ -100,6 +106,8 @@ export const useCartStore = create<CartStore>()(
       isDetailOpen: false,
       selectedProduct: null,
       preselectedColor: null,
+      activeGender: 'hombre' as Gender,
+      setActiveGender: (gender) => set({ activeGender: gender }),
       setOpen: (open) => set({ isOpen: open }),
       setDetailOpen: (open) => set({ isDetailOpen: open }),
       setSelectedProduct: (product) => set({ selectedProduct: product }),

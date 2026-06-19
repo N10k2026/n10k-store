@@ -49,6 +49,7 @@ interface Product {
   name: string;
   slug: string;
   category: string;
+  gender?: string;
   price: number;
   originalPrice: number | null;
   image: string;
@@ -79,6 +80,7 @@ interface FormState {
   name: string;
   slug: string;
   category: string;
+  gender: 'hombre' | 'mujer';
   price: string;
   originalPrice: string;
   image: string;
@@ -93,6 +95,7 @@ const EMPTY_FORM: FormState = {
   name: '',
   slug: '',
   category: PRODUCT_CATEGORIES[0],
+  gender: 'hombre',
   price: '',
   originalPrice: '',
   image: '',
@@ -209,6 +212,7 @@ export default function AdminProductsPage() {
       name: p.name,
       slug: p.slug,
       category: PRODUCT_CATEGORIES.includes(p.category) ? p.category : PRODUCT_CATEGORIES[0],
+      gender: p.gender === 'mujer' ? 'mujer' : 'hombre',
       price: String(p.price ?? ''),
       originalPrice: p.originalPrice != null ? String(p.originalPrice) : '',
       image: p.image,
@@ -260,6 +264,7 @@ export default function AdminProductsPage() {
       name: form.name.trim(),
       slug: form.slug.trim(),
       category: form.category,
+      gender: form.gender,
       price: priceNum,
       originalPrice: form.originalPrice ? Number(form.originalPrice) : null,
       image: form.image.trim(),
@@ -641,6 +646,28 @@ export default function AdminProductsPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="gender" className="text-zinc-300">
+                  Género <span className="text-[#E30613]">*</span>
+                </Label>
+                <Select
+                  value={form.gender}
+                  onValueChange={(v) =>
+                    setForm((p) => ({ ...p, gender: v as 'hombre' | 'mujer' }))
+                  }
+                >
+                  <SelectTrigger
+                    id="gender"
+                    className="bg-[#0a0a0a] border-zinc-800 text-zinc-100 w-full"
+                  >
+                    <SelectValue placeholder="Género" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#111] border-zinc-800 text-zinc-100">
+                    <SelectItem value="hombre">Hombre</SelectItem>
+                    <SelectItem value="mujer">Mujer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="category" className="text-zinc-300">
                   Categoría <span className="text-[#E30613]">*</span>

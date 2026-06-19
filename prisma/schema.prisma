@@ -12,6 +12,7 @@ model Product {
   name          String
   slug          String   @unique
   category      String
+  gender        String   @default("hombre")
   price         Float
   originalPrice Float?
   image         String
@@ -30,6 +31,8 @@ model Product {
   reviews    Review[]
 
   @@index([category])
+  @@index([gender])
+  @@index([gender, category])
   @@index([isNew, sortOrder])
 }
 

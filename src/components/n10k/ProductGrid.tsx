@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Product, useCartStore, categories, FetchStatus, fetchGuard } from '@/lib/store';
+import { Product, useCartStore, categories, genders, type Gender, FetchStatus, fetchGuard } from '@/lib/store';
 import { Badge } from '@/components/ui/badge';
 import { Heart, ShoppingBag, ArrowRight, AlertCircle, RefreshCw, ChevronDown, Play, Star } from 'lucide-react';
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
@@ -51,6 +51,8 @@ export default function ProductGrid() {
   const productsStatus = useCartStore((state) => state.productsStatus);
   const productsError = useCartStore((state) => state.productsError);
   const fetchProducts = useCartStore((state) => state.fetchProducts);
+  const activeGender = useCartStore((state) => state.activeGender);
+  const setActiveGender = useCartStore((state) => state.setActiveGender);
   const setSelectedProduct = useCartStore((state) => state.setSelectedProduct);
   const setPreselectedColor = useCartStore((state) => state.setPreselectedColor);
   const setDetailOpen = useCartStore((state) => state.setDetailOpen);
@@ -96,13 +98,14 @@ export default function ProductGrid() {
     fetchProducts();
   }, [fetchProducts]);
 
-  // PERF-5: Memoize filtered products
+  // PERF-5: Memoize filtered products (filter by active gender + category)
   const filteredProducts = useMemo(
     () => products.filter((p) => {
+      const genderMatch = (p.gender ?? 'hombre') === activeGender;
       const catMatch = activeCategory === 'Todos' || p.category === activeCategory;
-      return catMatch;
+      return genderMatch && catMatch;
     }),
-    [products, activeCategory]
+    [products, activeCategory, activeGender]
   );
 
   // Sort filtered products based on sortBy
@@ -219,11 +222,39 @@ export default function ProductGrid() {
         <div className="max-w-7xl mx-auto">
           {/* Collection Header — Desine-style: kicker + title + description */}
           <div className="mb-12 sm:mb-16">
+            {/* Gender selector — Hombre / Mujer toggle */}
+            <BlurIn delay={0.05} duration={0.6}>
+              <div className="flex items-center gap-2 mb-6">
+                <div className="inline-flex bg-zinc-900/60 border border-white/10 rounded-full p-1">
+                  {(genders as readonly string[]).map((g) => {
+                    const isActive = activeGender === g;
+                    return (
+                      <button
+                        key={g}
+                        onClick={() => {
+                          setActiveGender(g as Gender);
+                          setActiveCategory('Todos');
+                        }}
+                        className={`px-5 py-2 rounded-full text-xs font-montserrat-bold tracking-[0.12em] uppercase transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-[#E30613] text-white shadow-lg shadow-[#E30613]/25'
+                            : 'text-zinc-400 hover:text-white'
+                        }`}
+                        aria-pressed={isActive}
+                      >
+                        {g === 'hombre' ? 'Hombre' : 'Mujer'}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </BlurIn>
+
             {/* Kicker: small red label with line before text */}
             <BlurIn delay={0.1} duration={0.8}>
               <p className="text-[.65rem] font-montserrat-bold tracking-[.2em] uppercase text-[#E30613] mb-2 flex items-center gap-2.5">
                 <span className="inline-block w-5 h-[1.5px] bg-[#E30613]" />
-                Ropa de Caballero
+                {activeGender === 'hombre' ? 'Ropa de Caballero' : 'Ropa de Dama'}
               </p>
             </BlurIn>
 
@@ -240,7 +271,9 @@ export default function ProductGrid() {
             {/* Description — muted, left-aligned, max-width */}
             <BlurIn delay={0.4} duration={0.8}>
               <p className="text-sm sm:text-[.88rem] text-muted-foreground leading-[1.7] max-w-[380px] mb-8 font-montserrat-medium break-words hyphens-auto">
-                Una selección de prendas masculinas que reflejan nuestra esencia — audaz, auténtica y hecha para el hombre que marca su propio estilo urbano.
+                {activeGender === 'hombre'
+                  ? 'Una selección de prendas masculinas que reflejan nuestra esencia — audaz, auténtica y hecha para el hombre que marca su propio estilo urbano.'
+                  : 'Una selección de prendas femeninas que celebran tu esencia — audaz, auténtica y hecha para la mujer que impone su propio estilo urbano.'}
               </p>
             </BlurIn>
 
@@ -248,9 +281,10 @@ export default function ProductGrid() {
             <BlurIn delay={0.5} duration={0.8}>
               <div className="flex flex-wrap items-center gap-2.5">
                 {categories.map((cat) => {
+                  const genderProducts = products.filter((p) => (p.gender ?? 'hombre') === activeGender);
                   const count = cat === 'Todos'
-                    ? products.length
-                    : products.filter((p) => p.category === cat).length;
+                    ? genderProducts.length
+                    : genderProducts.filter((p) => p.category === cat).length;
                   return (
                     <button
                       key={cat}

@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
     name,
     slug,
     category,
+    gender,
     price,
     originalPrice,
     image,
@@ -79,11 +80,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'El slug ya existe' }, { status: 409 });
   }
 
+  const validGenders = ['hombre', 'mujer'];
+  const finalGender = gender && validGenders.includes(String(gender))
+    ? String(gender)
+    : 'hombre';
+
   const product = await db.product.create({
     data: {
       name: String(name),
       slug: String(slug),
       category: String(category),
+      gender: finalGender,
       price: Number(price),
       originalPrice: originalPrice != null ? Number(originalPrice) : null,
       image: String(image),
