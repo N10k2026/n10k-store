@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAdminSession } from '@/lib/admin-auth';
+import { deleteUploadByUrl } from '@/lib/orphan-cleanup';
 
 export async function PUT(
   req: NextRequest,
@@ -111,6 +112,27 @@ export async function PUT(
     };
   }
 
+  // Capture the OLD media URLs that are about to be replaced, so we can
+  // delete their physical files after the DB update (orphan cleanup).
+  // We only track /uploads/ files — static assets under /products/, /brand/,
+  // etc. are shared and must NOT be deleted.
+  const oldImageUrls = new Set<string>();
+  if (existing.image && existing.image.startsWith('/uploads/')) {
+    oldImageUrls.add(existing.image);
+  }
+  if (existing.video && existing.video.startsWith('/uploads/')) {
+    oldImageUrls.add(existing.video);
+  }
+  const oldProductImages = await db.productImage.findMany({
+    where: { productId: id },
+    select: { url: true },
+  });
+  for (const img of oldProductImages) {
+    if (img.url && img.url.startsWith('/uploads/')) {
+      oldImageUrls.add(img.url);
+    }
+  }
+
   const product = await db.product.update({
     where: { id },
     data: {
@@ -130,6 +152,35 @@ export async function PUT(
     },
   });
 
+  // Orphan cleanup: collect the NEW media URLs that are now referenced, then
+  // delete any OLD file that is no longer referenced.
+  const newImageUrls = new Set<string>();
+  if (product.image && product.image.startsWith('/uploads/')) {
+    newImageUrls.add(product.image);
+  }
+  if (product.video && product.video.startsWith('/uploads/')) {
+    newImageUrls.add(product.video);
+  }
+  const newProductImages = await db.productImage.findMany({
+    where: { productId: id },
+    select: { url: true },
+  });
+  for (const img of newProductImages) {
+    if (img.url && img.url.startsWith('/uploads/')) {
+      newImageUrls.add(img.url);
+    }
+  }
+  // Delete old uploads that are no longer referenced by this product.
+  // (They might still be referenced by OTHER products — deleteUploadByUrl is
+  // per-file and safe, but we only call it for URLs that were ours and are
+  // not in the new set. A global orphan sweep in the cleanup API handles
+  // cross-product dedup safely.)
+  for (const oldUrl of oldImageUrls) {
+    if (!newImageUrls.has(oldUrl)) {
+      await deleteUploadByUrl(oldUrl);
+    }
+  }
+
   return NextResponse.json({ product });
 }
 
@@ -143,11 +194,36 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  const existing = await db.product.findUnique({ where: { id } });
+  const existing = await db.product.findUnique({
+    where: { id },
+    include: { images: { select: { url: true } } },
+  });
   if (!existing) {
     return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 });
   }
 
+  // Capture all /uploads/ URLs that belong to this product before deletion,
+  // so we can delete the physical files afterwards (orphan cleanup).
+  const urlsToDelete: string[] = [];
+  if (existing.image && existing.image.startsWith('/uploads/')) {
+    urlsToDelete.push(existing.image);
+  }
+  if (existing.video && existing.video.startsWith('/uploads/')) {
+    urlsToDelete.push(existing.video);
+  }
+  for (const img of existing.images) {
+    if (img.url && img.url.startsWith('/uploads/')) {
+      urlsToDelete.push(img.url);
+    }
+  }
+
   await db.product.delete({ where: { id } });
+
+  // Delete the physical files (deleteUploadByUrl safely checks that no other
+  // product/banner still references them before unlinking).
+  for (const url of urlsToDelete) {
+    await deleteUploadByUrl(url);
+  }
+
   return NextResponse.json({ success: true });
 }

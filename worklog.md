@@ -661,3 +661,47 @@ Stage Summary:
   3. **Cache (cross-tab)**: al guardar en el admin, la tienda se actualiza automáticamente sin refresh manual (evento `storage` + `invalidateProducts` + `fetchProducts(true)` con `cache: 'no-store'`).
 - **Verificación real**: el cambio de imagen ahora se refleja en TODAS las áreas de la tienda (colecciones, detalles, y "porque te puede interesar"), no solo en esta última.
 - Archivos modificados: `src/app/admin/(dashboard)/productos/page.tsx` (propagación + notificación cross-tab), `src/lib/store.ts` (fetchProducts force + invalidateProducts + cache no-store), `src/app/page.tsx` (listener storage para auto-refresh).
+
+---
+Task ID: 13
+Agent: Main (Z.ai Code)
+Task: Las imágenes reemplazadas ¿desaparecen por completo del sistema y el cache? — Análisis e implementación de limpieza de huérfanos.
+
+Work Log:
+- **Análisis del comportamiento anterior**: las imágenes reemplazadas NO se eliminaban. El sistema solo actualizaba la URL en la BD, dejando el archivo físico huérfano acumulándose en `public/uploads/` indefinidamente. Confirmé con `grep` que ningún handler (upload, product PUT/DELETE, banner PUT/DELETE) eliminaba archivos físicos.
+- **Estado encontrado**: 5 imágenes en disco, de las cuales 2 eran huérfanas (de pruebas anteriores). Esto validó la necesidad del sistema de limpieza.
+- **Solución implementada (3 componentes)**:
+
+  1. **`src/lib/orphan-cleanup.ts`** — utilidad de limpieza:
+     - `collectReferencedUploadUrls()`: recolecta todas las URLs `/uploads/...` referenciadas por products (image, video, ProductImage) y banners.
+     - `listFilesRecursively(dir)`: lista todos los archivos físicos en `public/uploads/`.
+     - `cleanupOrphanUploads()`: barrido global — escanea, compara con referencias, elimina huérfanos. Retorna reporte (scanned, kept, deleted, bytesFreed, deletedFiles, errors).
+     - `deleteUploadByUrl(url)`: eliminación segura de un archivo por URL — **verifica primero que ninguna otra fila en la BD lo referencie** (usa `findFirst` con `startsWith` en product.image, product.video, ProductImage.url, banner.imageUrl). Solo elimina si no hay referencias.
+
+  2. **Integración en APIs existentes**:
+     - `PUT /api/admin/products/[id]`: antes del `db.product.update`, captura las URLs viejas (image, video, ProductImage) que empiecen con `/uploads/`. Después del update, para cada URL vieja que ya no esté en las nuevas, llama `deleteUploadByUrl` (que verifica referencias cruzadas antes de eliminar).
+     - `DELETE /api/admin/products/[id]`: captura todas las URLs `/uploads/` del producto antes de borrarlo, luego llama `deleteUploadByUrl` para cada una.
+     - `PUT /api/admin/banners/[id]`: si `imageUrl` cambió y la vieja era `/uploads/`, llama `deleteUploadByUrl`.
+     - `DELETE /api/admin/banners/[id]`: llama `deleteUploadByUrl(imageUrl)` tras borrar el banner.
+
+  3. **API de barrido global** `src/app/api/admin/cleanup/route.ts`:
+     - `GET` — dry-run: escanea y reporta orphans sin eliminar (para preview).
+     - `POST` — ejecuta `cleanupOrphanUploads()` y elimina todos los huérfanos. Útil para limpiar archivos acumulados antes de que se añadiera la limpieza automática, o para casos edge (producto borrado via DB directa).
+
+- **Bug corregido durante desarrollo**: `existsSync` se importaba de `fs/promises` pero es una función sincrónica de `fs`. Lo separé: `import { readdir, stat, unlink } from 'fs/promises'` + `import { existsSync } from 'fs'`. Sin esto, el cleanup fallaba con 500 silenciosamente.
+- **Verificación end-to-end**:
+  - Subí imagen A → asignada a Tank FEARLESS → subí imagen B → reemplacé A por B → verifiqué que A fue eliminada del disco por el cleanup automático del PUT. ✓
+  - Ejecuté el endpoint `GET /api/admin/cleanup` (dry-run): detectó 2 huérfanos correctamente. ✓
+  - Ejecuté `POST /api/admin/cleanup`: eliminó 2 huérfanos, liberó 18,064 bytes, 0 errores. ✓
+  - Verifiqué que los archivos restantes (2) están correctamente referenciados (banner "deadpool" + producto "Tee LIMITLESS"). ✓
+  - Restauré el Tank FEARLESS a su imagen original.
+- `bun run lint`: 0 errors, 0 warnings ✓
+
+Stage Summary:
+- **Respuesta a la pregunta del usuario**: antes, las imágenes reemplazadas NO desaparecían — se acumulaban como huérfanos. Ahora SÍ desaparecen por completo:
+  1. **Al reemplazar** (PUT product/banner): el archivo viejo se elimina automáticamente si ningún otro producto/banner lo referencia.
+  2. **Al eliminar** (DELETE product/banner): los archivos del producto/banner se eliminan si ningún otro los referencia.
+  3. **Barrido global** (`/api/admin/cleanup`): elimina cualquier huérfano acumulado (GET para preview, POST para ejecutar).
+- **Seguridad**: `deleteUploadByUrl` verifica referencias cruzadas en toda la BD antes de unlink — nunca elimina un archivo que otro producto/banner todavía usa. Solo toca archivos bajo `/uploads/` (los estáticos en `/products/`, `/brand/` etc. nunca se borran).
+- **Cache del navegador**: las URLs de uploads son content-hash + cache inmutable de 1 año. Al reemplazar una imagen, la nueva tiene un hash diferente → URL diferente → el navegador la pide fresca. La vieja, al ser eliminada del disco, no se sirve más (si el navegador la tiene cacheada, la URL ya no se usa en el HTML).
+- Archivos creados/modificados: `src/lib/orphan-cleanup.ts` (nuevo), `src/app/api/admin/products/[id]/route.ts` (cleanup en PUT+DELETE), `src/app/api/admin/banners/[id]/route.ts` (cleanup en PUT+DELETE), `src/app/api/admin/cleanup/route.ts` (nuevo, barrido global).

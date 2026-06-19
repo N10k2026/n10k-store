@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAdminSession } from '@/lib/admin-auth';
+import { deleteUploadByUrl } from '@/lib/orphan-cleanup';
 
 export async function PUT(
   req: NextRequest,
@@ -30,6 +31,10 @@ export async function PUT(
       ? String(placement)
       : undefined;
 
+  // Track the old image URL so we can delete the physical file if it's being
+  // replaced AND no longer referenced by any other banner/product.
+  const oldImageUrl = existing.imageUrl;
+
   const banner = await db.banner.update({
     where: { id },
     data: {
@@ -41,6 +46,17 @@ export async function PUT(
       ...(sortOrder != null ? { sortOrder: Number(sortOrder) } : {}),
     },
   });
+
+  // Orphan cleanup: if the image changed, delete the old file if it's an
+  // upload and no longer referenced.
+  if (
+    imageUrl != null &&
+    oldImageUrl &&
+    oldImageUrl.startsWith('/uploads/') &&
+    oldImageUrl !== String(imageUrl)
+  ) {
+    await deleteUploadByUrl(oldImageUrl);
+  }
 
   return NextResponse.json({ banner });
 }
@@ -55,6 +71,17 @@ export async function DELETE(
   }
 
   const { id } = await params;
+  const existing = await db.banner.findUnique({ where: { id } });
+  if (!existing) {
+    return NextResponse.json({ error: 'Banner no encontrado' }, { status: 404 });
+  }
+
+  const imageUrl = existing.imageUrl;
+
   await db.banner.delete({ where: { id } });
+
+  // Delete the physical file if it's an upload and no longer referenced.
+  await deleteUploadByUrl(imageUrl);
+
   return NextResponse.json({ success: true });
 }
