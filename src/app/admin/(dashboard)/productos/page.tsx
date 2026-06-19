@@ -42,6 +42,7 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import { Toaster } from '@/components/ui/sonner';
+import MediaUploader from '@/components/admin/MediaUploader';
 
 interface Product {
   id: string;
@@ -649,29 +650,12 @@ export default function AdminProductsPage() {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="image" className="text-zinc-300">
-                URL de imagen <span className="text-[#E30613]">*</span>
-              </Label>
-              <Input
-                id="image"
-                type="url"
-                value={form.image}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, image: e.target.value }))
-                }
-                placeholder="https://..."
-                className="bg-[#0a0a0a] border-zinc-800 text-zinc-100 placeholder:text-zinc-600"
-                required
-              />
-              {form.image && (
-                <img
-                  src={form.image}
-                  alt="Vista previa"
-                  className="h-20 w-20 rounded-lg object-cover bg-zinc-800 mt-2 border border-zinc-800"
-                />
-              )}
-            </div>
+            <MediaUploader
+              type="image"
+              value={form.image}
+              onChange={(url) => setForm((p) => ({ ...p, image: url }))}
+              label="Imagen del producto *"
+            />
 
             <div className="space-y-1.5">
               <Label htmlFor="description" className="text-zinc-300">
@@ -689,21 +673,12 @@ export default function AdminProductsPage() {
               />
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="video" className="text-zinc-300">
-                URL de video
-              </Label>
-              <Input
-                id="video"
-                type="url"
-                value={form.video}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, video: e.target.value }))
-                }
-                placeholder="https://..."
-                className="bg-[#0a0a0a] border-zinc-800 text-zinc-100 placeholder:text-zinc-600"
-              />
-            </div>
+            <MediaUploader
+              type="video"
+              value={form.video}
+              onChange={(url) => setForm((p) => ({ ...p, video: url }))}
+              label="Video del producto (opcional)"
+            />
 
             <div className="flex flex-wrap gap-5 pt-2">
               <div className="flex items-center gap-2">

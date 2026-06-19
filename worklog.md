@@ -508,3 +508,27 @@ Stage Summary:
 - **Componente reutilizable**: `MediaUploader` se integró en `/admin/banners` y puede reutilizarse en `/admin/productos` y otros formularios.
 - **Velocidad de carga optimizada**: WebP + cache inmutable + (para videos) +faststart = carga rápida y progressive streaming.
 - Archivos creados/modificados: `src/lib/media-optimizer.ts` (nuevo), `src/app/api/admin/upload/image/route.ts` (nuevo), `src/app/api/admin/upload/video/route.ts` (nuevo), `src/components/admin/MediaUploader.tsx` (nuevo), `src/app/admin/(dashboard)/banners/page.tsx` (integración), `next.config.ts` (bodySizeLimit + cache headers).
+
+---
+Task ID: 9
+Agent: Main (Z.ai Code)
+Task: Integrar MediaUploader en /admin/productos para que el usuario pueda cambiar imágenes (y videos) de productos desde el admin, específicamente para cambiar la imagen del Tank FEARLESS.
+
+Work Log:
+- Revisé el estado actual del Tank FEARLESS en la BD: imagen principal `/products/tank-negro.webp`, 2 colores (Negro, Rojo), 2 imágenes (una por color), sin video.
+- Integré `MediaUploader` en `src/app/admin/(dashboard)/productos/page.tsx`:
+  - Reemplacé el campo de URL de imagen manual (`Input type="url"`) con `<MediaUploader type="image">` que permite subir archivo o editar URL.
+  - Reemplacé el campo de URL de video manual con `<MediaUploader type="video">`.
+  - Añadí import de `MediaUploader` desde `@/components/admin/MediaUploader`.
+- Verifiqué con Agent Browser:
+  - Abrí `/admin/productos`, hice clic en "Editar" del Tank FEARLESS.
+  - El modal "Editar producto" abrió con el nombre "Tank FEARLESS" pre-llenado.
+  - El `MediaUploader` de imagen muestra el preview de `/products/tank-negro.webp` (la imagen actual).
+  - El campo de URL muestra `/products/tank-negro.webp` (editable).
+  - Los labels "IMAGEN DEL PRODUCTO *" y "VIDEO DEL PRODUCTO (OPCIONAL)" aparecen correctamente.
+- `bun run lint`: 0 errors, 0 warnings ✓
+
+Stage Summary:
+- **MediaUploader integrado en `/admin/productos`**: ahora el usuario puede cambiar la imagen (y video) de cualquier producto desde el admin, subiendo un archivo nuevo (se optimiza automáticamente) o editando la URL manualmente.
+- El formulario de edición del Tank FEARLESS está listo para que el usuario suba una nueva imagen.
+- Archivo modificado: `src/app/admin/(dashboard)/productos/page.tsx` (reemplazados campos de imagen y video con MediaUploader).
