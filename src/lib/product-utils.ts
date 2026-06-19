@@ -1,4 +1,4 @@
-import { versionMediaUrl, versionMediaUrls, versionColorImages } from './media-version';
+import { versionMediaUrl } from './media-version';
 
 /** Product-like shape for stock helpers (store Product or API payload). */
 type ProductStockShape = {

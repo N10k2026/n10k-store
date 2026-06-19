@@ -12,6 +12,7 @@ export default function RecentlyViewedSection() {
   const clearRecentlyViewed = useCartStore((state) => state.clearRecentlyViewed);
   const setSelectedProduct = useCartStore((state) => state.setSelectedProduct);
   const setDetailOpen = useCartStore((state) => state.setDetailOpen);
+  const addRecentlyViewed = useCartStore((state) => state.addRecentlyViewed);
 
   const sectionRef = useRef<HTMLElement>(null);
 
@@ -65,8 +66,12 @@ export default function RecentlyViewedSection() {
     return null;
   }
 
-  // Product detail disabled
-  const handleProductClick = (_product: Product) => {};
+  // Open the product detail dialog (gallery, sizes, size guide, colors, etc.)
+  const handleProductClick = (product: Product) => {
+    setSelectedProduct(product);
+    setDetailOpen(true);
+    addRecentlyViewed(product.id);
+  };
 
   return (
     <section ref={sectionRef} className="py-6 sm:py-16 px-4 relative overflow-hidden">

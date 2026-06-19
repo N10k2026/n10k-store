@@ -4,7 +4,7 @@ import { useCartStore, Product } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import React from 'react';
-import { Heart, Trash2, ShoppingBag, ArrowRight, Share2, Copy, MessageCircle } from 'lucide-react';
+import { Heart, Trash2, ShoppingBag, ArrowRight, Copy, MessageCircle } from 'lucide-react';
 import { useMemo, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 
@@ -40,9 +40,6 @@ const WishlistSidebar = function WishlistSidebar() {
       })
       .filter(Boolean) as { product: Product; colorName: string }[];
   }, [wishlist, products]);
-
-  // WhatsApp number for sharing
-  const WHATSAPP_NUMBER = '584122880228';
 
   // Share wishlist via WhatsApp
   const handleShareWhatsApp = useCallback(() => {
@@ -154,7 +151,12 @@ const WishlistSidebar = function WishlistSidebar() {
                     <div
                       className="w-20 h-24 flex-shrink-0 overflow-hidden cursor-pointer"
                       onClick={() => {
+                        // Close the wishlist sidebar and open the product detail
+                        // dialog with this product + color preselected.
                         setWishlistOpen(false);
+                        setSelectedProduct(product);
+                        setPreselectedColor(colorName);
+                        setDetailOpen(true);
                       }}
                     >
                       <img

@@ -58,7 +58,6 @@ export default function ProductGrid() {
   const addItem = useCartStore((state) => state.addItem);
   const toggleWishlistItem = useCartStore((state) => state.toggleWishlistItem);
   const wishlist = useCartStore((state) => state.wishlist);
-  const setWishlistOpen = useCartStore((state) => state.setWishlistOpen);
 
   useEffect(() => {
     fetchProducts();

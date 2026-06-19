@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(reviews);
-  } catch (error) {
+  } catch (_error) {
     console.error('Error fetching reviews');
     return NextResponse.json(
       { error: 'Error al obtener las reseñas' },

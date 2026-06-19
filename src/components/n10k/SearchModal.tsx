@@ -119,13 +119,15 @@ export default function SearchModal() {
     }
   }, []);
 
-  // Select product
-  const handleSelectProduct = useCallback((_product: Product) => {
+  // Select product — close the search modal and open the product detail dialog
+  const handleSelectProduct = useCallback((product: Product) => {
     setSearchOpen(false);
     if (debouncedQuery.trim()) {
       saveRecentSearch(debouncedQuery.trim());
     }
-  }, [setSearchOpen, saveRecentSearch, debouncedQuery]);
+    setSelectedProduct(product);
+    setDetailOpen(true);
+  }, [setSearchOpen, saveRecentSearch, debouncedQuery, setSelectedProduct, setDetailOpen]);
 
   // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {

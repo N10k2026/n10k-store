@@ -1,7 +1,7 @@
 'use client';
 
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Ruler, X } from 'lucide-react';
+import { Ruler } from 'lucide-react';
 
 interface SizeGuideProps {
   isOpen: boolean;

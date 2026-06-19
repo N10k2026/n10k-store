@@ -4,13 +4,12 @@ import { useCartStore, categories } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { X, ShoppingBag, Heart, Minus, Plus, ChevronLeft, ChevronRight, Play, Ruler, Share2, Link2, MessageCircle, Star, Home } from 'lucide-react';
+import { X, ShoppingBag, Heart, Minus, Plus, ChevronLeft, ChevronRight, Play, Ruler, Share2, Link2, MessageCircle, Home } from 'lucide-react';
 import SizeGuide from '@/components/n10k/SizeGuide';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { getFirstAvailableSize, isProductSizeOutOfStock, getProductShareUrl, parseStoredNotificationEntries } from '@/lib/product-utils';
-import { useFocusTrap } from '@/hooks/use-focus-trap';
+import { getFirstAvailableSize, isProductSizeOutOfStock, getProductShareUrl } from '@/lib/product-utils';
 import { getBreadcrumbJsonLd } from '@/lib/structured-data';
 import { SITE_URL } from '@/lib/site-config';
 
@@ -39,10 +38,6 @@ export default function ProductDetail() {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
-  // Stock notification state
-  const [notifySize, setNotifySize] = useState<string | null>(null);
-  const [notifyEmail, setNotifyEmail] = useState('');
-  const [notifySubmitting, setNotifySubmitting] = useState(false);
   // Lightbox/zoom removed — was causing bugs on mobile
 
   // Computed defaults — first available size and first color (or preselected)
@@ -98,8 +93,6 @@ export default function ProductDetail() {
     setActiveSlideIndex(0);
     setShowDescription(false);
     setShareOpen(false);
-    setNotifySize(null);
-    setNotifyEmail('');
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [isDetailOpen, selectedProduct?.id]);
 
@@ -228,80 +221,6 @@ export default function ProductDetail() {
   }, [selectedProduct]);
 
   const isSizeOutOfStock = (size: string) => outOfStockSizes.has(size);
-
-  // Handle quick stock notification bell click
-  const handleStockNotifyBell = useCallback((size: string) => {
-    if (!selectedProduct) return;
-    // Store in localStorage
-    try {
-      const stored = parseStoredNotificationEntries(localStorage.getItem('n10k-stock-notifications'));
-      const entry = { productId: selectedProduct.id, size, timestamp: Date.now() };
-      const exists = stored.some((n) => n.productId === entry.productId && n.size === entry.size);
-      if (!exists) {
-        stored.push(entry);
-        localStorage.setItem('n10k-stock-notifications', JSON.stringify(stored));
-      }
-    } catch {
-      // ignore localStorage errors
-    }
-    toast({ title: 'Te notificaremos cuando vuelva a estar disponible', description: `${selectedProduct.name} — Talla ${size}` });
-    setNotifySize(size);
-  }, [selectedProduct]);
-
-  // Handle notify me submission
-  const handleNotifySubmit = useCallback(() => {
-    if (!notifyEmail || !notifySize || !selectedProduct) return;
-    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(notifyEmail.trim());
-    if (!emailValid) {
-      toast({
-        title: 'Email inválido',
-        description: 'Introduce un correo electrónico válido.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    setNotifySubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      // Store in localStorage
-      try {
-        const stored = parseStoredNotificationEntries(localStorage.getItem('n10k-stock-notifications'));
-        const entry = { productId: selectedProduct.id, size: notifySize, email: notifyEmail.trim(), timestamp: Date.now() };
-        const exists = stored.some((n) => n.productId === entry.productId && n.size === entry.size);
-        if (!exists) {
-          stored.push(entry);
-        } else {
-          const idx = stored.findIndex((n) => n.productId === entry.productId && n.size === entry.size);
-          if (idx !== -1) stored[idx] = entry;
-        }
-        localStorage.setItem('n10k-stock-notifications', JSON.stringify(stored));
-      } catch {
-        // ignore localStorage errors
-      }
-      toast({ title: 'Te notificaremos cuando esté disponible', description: `${selectedProduct.name} — Talla ${notifySize}` });
-      setNotifyEmail('');
-      setNotifySize(null);
-      setNotifySubmitting(false);
-    }, 800);
-  }, [notifyEmail, notifySize, selectedProduct]);
-
-  // Helper: render star rating
-  const renderStars = (rating?: number) => {
-    if (!rating || rating <= 0) return null;
-    const full = Math.floor(rating);
-    const half = rating % 1 >= 0.5;
-    return (
-      <div className="flex items-center gap-0.5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Star
-            key={i}
-            className={`h-3 w-3 ${i < full ? 'text-[#E30613] fill-[#E30613]' : i === full && half ? 'text-[#E30613] fill-[#E30613]/50' : 'text-white/20'}`}
-          />
-        ))}
-        <span className="text-[10px] text-white/40 ml-1">{rating.toFixed(1)}</span>
-      </div>
-    );
-  };
 
   // Long press handlers for description overlay
   const handleTouchStart = useCallback(() => {
@@ -606,7 +525,6 @@ export default function ProductDetail() {
                     onClick={() => {
                       if (isOOS) return;
                       setUserSelectedSize(size);
-                      setNotifySize(null);
                     }}
                   >
                     {size}
@@ -1045,7 +963,6 @@ export default function ProductDetail() {
                       onClick={() => {
                         if (isOOS) return;
                         setUserSelectedSize(size);
-                        setNotifySize(null);
                       }}
                     >
                       {size}

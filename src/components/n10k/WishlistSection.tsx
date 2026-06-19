@@ -1,7 +1,7 @@
 'use client';
 
 import { useCartStore, Product } from '@/lib/store';
-import { Heart, Trash2, ShoppingBag, X } from 'lucide-react';
+import { Heart, ShoppingBag, X } from 'lucide-react';
 import { useMemo, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { getFirstAvailableSize } from '@/lib/product-utils';

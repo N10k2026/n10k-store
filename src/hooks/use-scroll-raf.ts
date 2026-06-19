@@ -11,8 +11,12 @@ export function useScrollRaf(
   deps: DependencyList = [],
   options?: { listenResize?: boolean },
 ) {
+  // Keep the latest callback in a ref so the scroll listener (attached once)
+  // always invokes the newest function without needing to re-subscribe.
   const callbackRef = useRef(callback);
-  callbackRef.current = callback;
+  useEffect(() => {
+    callbackRef.current = callback;
+  });
 
   useEffect(() => {
     let rafId = 0;
@@ -38,6 +42,5 @@ export function useScrollRaf(
       }
       cancelAnimationFrame(rafId);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }

@@ -189,7 +189,7 @@ export const Plasma = ({
 
     const loop = (t: number) => {
       if (contextLost || !isVisible || !tabVisible) return;
-      let timeValue = (t - t0) * 0.001;
+      const timeValue = (t - t0) * 0.001;
       if (direction === 'pingpong') {
         const pingpongDuration = 10;
         const segmentTime = timeValue % pingpongDuration;

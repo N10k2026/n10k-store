@@ -2,7 +2,7 @@
 
 import { useRef, useEffect } from 'react';
 import { Star, Quote } from 'lucide-react';
-import { BlurIn, BlurFadeUp } from '@/components/n10k/TextAnimations';
+import { BlurIn } from '@/components/n10k/TextAnimations';
 import { gsap, ScrollTrigger } from '@/lib/gsap-init';
 import { useScrollVisibleWithRef, useStaggerChildren } from '@/hooks/use-scroll-visible';
 
