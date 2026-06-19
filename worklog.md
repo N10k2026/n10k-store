@@ -597,3 +597,67 @@ Stage Summary:
   - Si el usuario cambia solo la "Imagen del producto" → todos los colores usan esa imagen.
   - Si el usuario quiere imágenes diferentes por color → usa la sección "Colores e imágenes por color" (tiene prioridad).
 - Archivo modificado: `src/app/api/admin/products/[id]/route.ts` (la rama `else if (image != null)` ahora sincroniza incondicionalmente, no solo cuando `image !== existing.image`).
+
+---
+Task ID: 12
+Agent: Main (Z.ai Code)
+Task: Investigación exhaustiva — el usuario sube una imagen al Tank FEARLESS pero NO se visualiza en la web principal (solo aparece en "porque te puede interesar", no en colecciones ni detalles). Solución robusta y definitiva.
+
+Work Log:
+- **Diagnóstico exhaustivo** con múltiples parámetros:
+  1. **Estado BD**: `image` principal actualizada (nueva URL) ✓, pero `ProductImage` (imágenes por color) seguían con URLs viejas ✗. No coincidían.
+  2. **API PUT code**: mi fix anterior (`else if (image != null)`) SÍ estaba en el código y SÍ funcionaba cuando se enviaba SOLO `image`.
+  3. **Prueba de la API**: un PUT con solo `image` sincronizaba correctamente las ProductImage. → La API no era el problema.
+  4. **Catálogo estático**: descartado — la API devuelve `X-Catalog-Source: database`.
+  5. **Cache Zustand**: `fetchProducts` tiene `if (productsStatus === 'success') return` — una vez cargados, los productos NUNCA se re-cargan en la misma sesión. Problema de cache en memoria.
+  6. **Por qué "porque te puede interesar" sí funciona**: esa sección usa `rp.image` (campo principal) directamente, NO `colorImages`. Por eso el cambio se veía ahí pero no en colecciones/detalles (que usan `colorImages`).
+
+- **Causa raíz frontal**: cuando el usuario abre el formulario de edición, `form.colors[].imageUrl` se carga con las URLs viejas de ProductImage. Al cambiar SOLO la "Imagen del producto" principal, `form.colors` no se actualizaba. Al guardar, el payload enviaba `colorImages` con las URLs VIEJAS, y la API (rama `if colorImages != null`) las sobrescribía con las viejas.
+
+- **Correcciones implementadas (3 capas)**:
+
+  **Capa 1 — Frontend: propagación automática de imagen principal a colores**
+  En `MediaUploader` de "Imagen del producto", al cambiar la URL, ahora propago el cambio a TODOS los colores cuyo `imageUrl` coincida con la imagen principal vieja (o esté vacío). Así, al subir una imagen nueva, todos los colores se actualizan automáticamente.
+  ```tsx
+  onChange={(url) => setForm((p) => {
+    const oldImage = p.image;
+    return {
+      ...p, image: url,
+      colors: p.colors.map((c) => ({
+        ...c,
+        imageUrl: c.imageUrl === oldImage || !c.imageUrl ? url : c.imageUrl,
+      })),
+    };
+  })}
+  ```
+
+  **Capa 2 — Frontend: fallback a imagen principal en handleSubmit**
+  Al construir `colorImages`, si un color no tiene `imageUrl`, uso la imagen principal como fallback. Garantiza que siempre haya una imagen por color.
+  ```tsx
+  const img = c.imageUrl.trim() || mainImg;
+  colorImages[c.name.trim()] = [img];
+  ```
+
+  **Capa 3 — Cache: invalidación cross-tab del store de productos**
+  - `store.ts`: `fetchProducts(force?)` ahora acepta un parámetro `force` para saltarse el cache. Añadí `invalidateProducts()` que resetea `productsStatus` a 'idle'. El fetch ahora usa `cache: 'no-store'` y un timestamp `_t=` para bypass de HTTP cache.
+  - `productos/page.tsx`: después de guardar, escribe `localStorage.setItem('n10k-products-updated', timestamp)` para notificar a otras pestañas.
+  - `page.tsx` (storefront): listener del evento `storage` que, al detectar el cambio, llama `invalidateProducts()` + `fetchProducts(true)` para re-cargar productos frescos sin necesidad de refresh manual.
+
+- **Verificación end-to-end con Agent Browser** (simulando el flujo completo del usuario):
+  - Subí imagen de prueba (111KB JPEG) → optimizada a WebP (content-hash URL).
+  - PUT como el formulario (con `colorImages` propagadas a la nueva URL).
+  - BD: `image` principal Y `ProductImage` (Negro + Rojo) todas con la nueva URL ✓.
+  - API pública: `colorImages.Negro` y `colorImages.Rojo` devolvieron la nueva imagen ✓.
+  - **Colecciones (ProductGrid)**: Tank FEARLESS mostró `/uploads/images/ba577020541a9dea.webp?v=20260620` con `naturalWidth:1200` ✓ (antes NO se veía).
+  - **Detalles (ProductDetail)**: dialog mostró la nueva imagen con alt "Tank FEARLESS Negro - imagen 1" ✓ (antes NO se veía).
+  - **"Porque te puede interesar"**: siguió funcionando ✓ (ya funcionaba antes).
+  - Restauré el Tank FEARLESS a su imagen original y limpié archivos de prueba.
+- `bun run lint`: 0 errors, 0 warnings ✓
+
+Stage Summary:
+- **Bug corregido definitivamente con enfoque robusto de 3 capas**:
+  1. **Frontend (propagación)**: al cambiar la imagen principal, todos los colores se actualizan automáticamente.
+  2. **Frontend (fallback)**: colores sin imagen propia usan la imagen principal.
+  3. **Cache (cross-tab)**: al guardar en el admin, la tienda se actualiza automáticamente sin refresh manual (evento `storage` + `invalidateProducts` + `fetchProducts(true)` con `cache: 'no-store'`).
+- **Verificación real**: el cambio de imagen ahora se refleja en TODAS las áreas de la tienda (colecciones, detalles, y "porque te puede interesar"), no solo en esta última.
+- Archivos modificados: `src/app/admin/(dashboard)/productos/page.tsx` (propagación + notificación cross-tab), `src/lib/store.ts` (fetchProducts force + invalidateProducts + cache no-store), `src/app/page.tsx` (listener storage para auto-refresh).

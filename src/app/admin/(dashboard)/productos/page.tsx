@@ -239,11 +239,17 @@ export default function AdminProductsPage() {
 
     setSaving(true);
     // Build colorImages: Record<colorName, string[]> for the API.
-    // This syncs the per-color images when updating a product.
+    // For each color, use its specific imageUrl OR fall back to the main
+    // product image. This ensures the storefront (which displays per-color
+    // images in preference to the main image) always shows the correct image.
+    const mainImg = form.image.trim();
     const colorImages: Record<string, string[]> = {};
     for (const c of form.colors) {
-      if (c.name.trim() && c.imageUrl.trim()) {
-        colorImages[c.name.trim()] = [c.imageUrl.trim()];
+      if (c.name.trim()) {
+        const img = c.imageUrl.trim() || mainImg;
+        if (img) {
+          colorImages[c.name.trim()] = [img];
+        }
       }
     }
     const payload = {
@@ -289,6 +295,14 @@ export default function AdminProductsPage() {
       }
       setDialogOpen(false);
       refetch();
+      // Notify other tabs (e.g., the storefront) that products changed so
+      // they re-fetch fresh data. The storefront listens to the `storage`
+      // event and invalidates its in-memory product cache.
+      try {
+        localStorage.setItem('n10k-products-updated', String(Date.now()));
+      } catch {
+        // ignore storage errors
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error desconocido';
       toast.error(msg);
@@ -688,7 +702,26 @@ export default function AdminProductsPage() {
             <MediaUploader
               type="image"
               value={form.image}
-              onChange={(url) => setForm((p) => ({ ...p, image: url }))}
+              onChange={(url) =>
+                setForm((p) => {
+                  // When the main product image changes, propagate the change
+                  // to ALL per-color images. The storefront displays per-color
+                  // images (colorImages) in preference to the main `image`, so
+                  // if we only update `image` the old per-color images would
+                  // still show. The user can still customize a specific color's
+                  // image afterwards via the per-color MediaUploader below.
+                  const oldImage = p.image;
+                  return {
+                    ...p,
+                    image: url,
+                    colors: p.colors.map((c) => ({
+                      ...c,
+                      // Update colors that had the old main image OR were empty
+                      imageUrl: c.imageUrl === oldImage || !c.imageUrl ? url : c.imageUrl,
+                    })),
+                  };
+                })
+              }
               label="Imagen del producto *"
             />
 

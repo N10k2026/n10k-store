@@ -73,7 +73,11 @@ interface CartStore {
   clearCart: () => void;
   totalItems: () => number;
   totalPrice: () => number;
-  fetchProducts: () => Promise<void>;
+  fetchProducts: (force?: boolean) => Promise<void>;
+  /** Invalidate the in-memory products cache so the next fetchProducts call
+   *  re-fetches from the API. Used after admin edits to ensure the storefront
+   *  shows fresh data. */
+  invalidateProducts: () => void;
   // Wishlist state — stores product+color pairs
   wishlist: WishlistItem[];
   isWishlistOpen: boolean;
@@ -181,9 +185,10 @@ export const useCartStore = create<CartStore>()(
         set({ recentlyViewed: [productId, ...current].slice(0, 10) });
       },
       clearRecentlyViewed: () => set({ recentlyViewed: [] }),
-      fetchProducts: async () => {
+      fetchProducts: async (force?: boolean) => {
         const state = get();
-        if (state.productsStatus === 'success' || fetchGuard.inProgress) return; // Already loaded or in progress
+        // Skip if already loaded (unless force=true) or a fetch is in progress
+        if ((!force && state.productsStatus === 'success') || fetchGuard.inProgress) return;
         fetchGuard.inProgress = true;
         set({ productsStatus: 'loading', productsError: null });
 
@@ -192,7 +197,11 @@ export const useCartStore = create<CartStore>()(
 
         for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
           try {
-            const res = await fetch('/api/products');
+            // Cache-busting: send a timestamp to bypass any HTTP cache
+            // (e.g., CDN, browser cache) so we always get fresh product data.
+            const res = await fetch(`/api/products?_t=${Date.now()}`, {
+              cache: 'no-store',
+            });
 
             // Handle non-JSON responses (e.g., server returning HTML error pages)
             const contentType = res.headers.get('content-type') || '';
@@ -229,6 +238,11 @@ export const useCartStore = create<CartStore>()(
         }
 
         fetchGuard.inProgress = false;
+      },
+      invalidateProducts: () => {
+        // Reset the products cache status so the next fetchProducts() call
+        // re-fetches from the API. Used after admin edits.
+        set({ productsStatus: 'idle', productsError: null });
       },
     }),
     {

@@ -72,6 +72,22 @@ export default function Home() {
     useCartStore.persist.rehydrate();
   }, []);
 
+  // Listen for product updates from the admin (other tabs). When the admin
+  // saves a product, it writes a timestamp to localStorage which fires a
+  // `storage` event in OTHER tabs. We invalidate the in-memory product cache
+  // and force a re-fetch so the storefront shows fresh data without a manual
+  // page refresh.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'n10k-products-updated') {
+        useCartStore.getState().invalidateProducts();
+        useCartStore.getState().fetchProducts(true);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   const [cartMounted, setCartMounted] = useState(false);
   const [detailMounted, setDetailMounted] = useState(false);
   const [wishlistMounted, setWishlistMounted] = useState(false);
