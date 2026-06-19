@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Lock, User, AlertCircle, Loader2, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
-export default function AdminLoginPage() {
+function AdminLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get('from') || '/admin';

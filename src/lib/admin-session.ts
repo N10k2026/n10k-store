@@ -65,7 +65,7 @@ async function deriveKey(
     ['deriveBits'],
   );
   return crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
+    { name: 'PBKDF2', salt: salt as BufferSource, iterations, hash: 'SHA-256' },
     baseKey,
     KEY_LENGTH * 8,
   );
@@ -154,7 +154,7 @@ export async function verifySession(
   const valid = await crypto.subtle.verify(
     'HMAC',
     key,
-    sigBytes,
+    sigBytes as BufferSource,
     new TextEncoder().encode(signingInput),
   );
   if (!valid) return null;
