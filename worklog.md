@@ -144,3 +144,44 @@ Stage Summary:
 - Solución: reemplazar tamaños de fuente Tailwind fijos (`text-2xl sm:text-4xl md:text-5xl lg:text-6xl`) por `clamp(1.25rem, 3.5vw, 2.75rem)` que escala fluidamente con el viewport, respetando el ancho del card.
 - Archivo modificado: `src/components/n10k/StatsSection.tsx` (AnimatedCounter span).
 - Verificado en mobile (375px), tablet (768px) y desktop (1280px): ningún número desborda, el diseño se ve consistente y legible en todos los tamaños.
+
+---
+Task ID: 5
+Agent: Main (Z.ai Code)
+Task: (1) Limitar el área de "Porque te puede interesar" al rectángulo rojo (parte inferior-izquierda, ancho de la columna izquierda). (2) Hacer que la imagen del producto + "Agregar al Carrito" ocupen el rectángulo azul (columna derecha completa, toda la altura). El usuario descartó el pedido de eliminar el "0".
+
+Work Log:
+- Analicé las imágenes del usuario con un subagente VLM (Task ID 4-vision): confirmó que el rectángulo rojo delimita la zona inferior-izquierda (columna izquierda, ~x[0-540]) y el rectángulo azul delimita la columna derecha completa (~x[537-1167], imagen + agregar al carrito).
+- Examiné la estructura del layout desktop en ProductDetail.tsx:
+  - `DialogContent` (flex-col, h-[95vh])
+    - Mobile layout (md:hidden) — stack vertical con su propia sección "Porque te puede interesar" (línea 721)
+    - Desktop layout `hidden md:flex md:flex-row` (2 columnas: LEFT md:w-[45%] info, RIGHT md:w-[55%] imagen+carrito)
+    - Sección "Porque te puede interesar" desktop (hidden md:block) — **AFUERA** de las 2 columnas, ocupando TODO el ancho del dialog al final
+- Medí el layout actual con Agent Browser (desktop 1280x720):
+  - Dialog: 1152×684
+  - Columna izquierda: 518×524
+  - Columna derecha (imagen+carrito): 633×524
+  - Sección "Porque te puede interesar": **1152px de ancho** (ocupaba todo el dialog, no limitada a la columna izquierda)
+- **Causa raíz**: la sección "Porque te puede interesar" desktop estaba fuera del contenedor de 2 columnas, por lo que ocupaba todo el ancho del dialog y restaba altura a las columnas.
+- **Corrección**: moví la sección "Porque te puede interesar" desktop **dentro** de la columna izquierda (LEFT, md:w-[45%]), después de "Cantidad + Subtotal", antes del cierre del div de la columna. Ajustes:
+  - La sección ahora tiene `-mx-6 md:-mx-8 px-6 md:px-8` para que el borde superior y fondo se extiendan al ancho completo de la columna izquierda (sin padding lateral del padre) manteniendo el contenido alineado.
+  - `py-3 mt-2` para separación visual tras el subtotal.
+  - Eliminé la sección duplicada que estaba fuera del contenedor de 2 columnas (líneas 1176-1210 originales).
+  - Mantuve `maxHeight: 120px` + overflow-x-auto para que la lista de productos relacionados sea compacta y scrolleable horizontalmente.
+- Verificación con Agent Browser (desktop 1280x720, Sweater PEARL):
+  - Sección "Porque te puede interesar": width=**518px** (limitada a la columna izquierda = rectángulo rojo), left=65, right=583 ✓
+  - Visible al hacer scroll dentro de la columna izquierda (que tiene overflow-y-auto) ✓
+  - Columna derecha (imagen + agregar al carrito): 633×546, top=15, bottom=562 (toda la altura del dialog = rectángulo azul) ✓
+  - Botón "Agregar al Carrito": top=506, bottom=542, dentro de la columna derecha ✓
+- Verificación mobile (375x667, Sweater PEARL):
+  - La sección mobile (línea 721, independiente del desktop) sigue funcionando: width=326px, visible=true ✓
+  - La sección desktop (ahora dentro del contenedor `hidden md:flex`) está correctamente oculta en mobile (width=0, visible=false) ✓
+- `bun run lint`: 0 errors, 0 warnings ✓
+- `dev.log` limpio, sin errores runtime ✓
+
+Stage Summary:
+- **Bug 1 corregido**: la sección "Porque te puede interesar" (desktop) ahora está limitada al ancho de la columna izquierda (~518px = rectángulo rojo), en lugar de ocupar todo el ancho del dialog (1152px). Está dentro de la columna izquierda scrolleable, al final del contenido.
+- **Bug 2 corregido**: la imagen del producto + botón "Agregar al Carrito" (columna derecha) ahora ocupan toda la altura disponible del dialog (633×546 = rectángulo azul), ya que la sección de relacionados ya no resta altura al contenedor de 2 columnas.
+- Archivo modificado: `src/components/n10k/ProductDetail.tsx` (movida la sección desktop "Porque te puede interesar" dentro de la columna izquierda, eliminada la duplicada afuera).
+- El layout mobile no se vio afectado (mantiene su propia sección independiente).
+- Verificado en desktop (1280x720) y mobile (375x667) con Agent Browser: layout correcto, sin errores runtime, lint limpio.

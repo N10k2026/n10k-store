@@ -1007,6 +1007,45 @@ export default function ProductDetail() {
               </div>
             </div>
 
+            {/* Customers Also Viewed - Desktop (inside LEFT column so it's
+                limited to the left-column width — the red-rectangle area —
+                and the right column / image + add-to-cart gets the full height
+                of the dialog, the blue-rectangle area). */}
+            {recommendedProducts.length > 0 && (
+              <div className="border-t border-white/5 bg-[#0A0A0A] -mx-6 md:-mx-8 px-6 md:px-8 py-3 mt-2">
+                <p className="text-[10px] font-montserrat-bold text-white/40 tracking-[0.12em] uppercase mb-1.5">
+                  Porque te puede interesar
+                </p>
+                <div className="flex gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent pb-1" style={{ maxHeight: '120px' }}>
+                  {recommendedProducts.map((rp) => (
+                    <button
+                      key={rp.id}
+                      className="flex-shrink-0 w-[72px] text-left cursor-pointer group"
+                      onClick={() => {
+                        setSelectedProduct(rp);
+                        setPreselectedColor(null);
+                      }}
+                    >
+                      <div className="relative aspect-[3/4] rounded-md overflow-hidden bg-[#1A1A1A] border border-white/5 group-hover:border-[#E30613]/30 transition-all duration-300">
+                        <img
+                          src={rp.image}
+                          alt={rp.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                        />
+                      </div>
+                      <p className="text-white text-[9px] font-montserrat-bold truncate mt-0.5 group-hover:text-[#E30613] transition-colors leading-tight">
+                        {rp.name}
+                      </p>
+                      <p className="text-[#E30613] text-[10px] font-montserrat-extrabold leading-tight">
+                        ${rp.price.toFixed(2)}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
 
           {/* RIGHT: Images + Add to Cart */}
@@ -1133,42 +1172,6 @@ export default function ProductDetail() {
             </div>
           </div>
         </div>
-
-        {/* Customers Also Viewed - Desktop (compact, limited height so image/thumbnails/add-to-cart get more space) */}
-        {recommendedProducts.length > 0 && (
-          <div className="hidden md:block border-t border-white/5 bg-[#0A0A0A] px-6 md:px-8 py-2">
-            <p className="text-[10px] font-montserrat-bold text-white/40 tracking-[0.12em] uppercase mb-1.5">
-              Porque te puede interesar
-            </p>
-            <div className="flex gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent" style={{ maxHeight: '120px' }}>
-              {recommendedProducts.map((rp) => (
-                <button
-                  key={rp.id}
-                  className="flex-shrink-0 w-[72px] text-left cursor-pointer group"
-                  onClick={() => {
-                    setSelectedProduct(rp);
-                    setPreselectedColor(null);
-                  }}
-                >
-                  <div className="relative aspect-[3/4] rounded-md overflow-hidden bg-[#1A1A1A] border border-white/5 group-hover:border-[#E30613]/30 transition-all duration-300">
-                    <img
-                      src={rp.image}
-                      alt={rp.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                    />
-                  </div>
-                  <p className="text-white text-[9px] font-montserrat-bold truncate mt-0.5 group-hover:text-[#E30613] transition-colors leading-tight">
-                    {rp.name}
-                  </p>
-                  <p className="text-[#E30613] text-[10px] font-montserrat-extrabold leading-tight">
-                    ${rp.price.toFixed(2)}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </DialogContent>
 
       {/* Size Guide Modal */}
