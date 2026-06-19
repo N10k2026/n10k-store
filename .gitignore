@@ -63,6 +63,9 @@ db/*.db-journal
 # Agent internal artifacts
 /tool-results/
 
+# One-off optimization scripts (not part of the app runtime)
+/scripts/
+
 # Verification / debug screenshots in project root (NOT in /public)
 /*.png
 /*.jpeg

@@ -8,6 +8,9 @@ export async function GET() {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 
+  // Admin stats must always be fresh — never cached.
+  const headers = { 'Cache-Control': 'no-store, max-age=0' };
+
   const [
     productCount,
     reviewCount,
@@ -66,5 +69,5 @@ export async function GET() {
     recentOrders: orders,
     recentReviews,
     topProducts,
-  });
+  }, { headers });
 }
