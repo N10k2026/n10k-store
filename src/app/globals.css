@@ -607,6 +607,16 @@ body {
   100% { transform: translateX(-25%); }
 }
 
+/* Cashea marquee — 30% faster on mobile (17.5s vs 25s desktop) */
+.marquee-cashea {
+  animation: marquee-scroll 17.5s linear infinite;
+}
+@media (min-width: 768px) {
+  .marquee-cashea {
+    animation-duration: 25s;
+  }
+}
+
 /* ========================================
    RED SECTION VARIANTS (Red bg)
    Glass cards adapted for red backgrounds

@@ -148,7 +148,7 @@ export default function Home() {
 
           {/* Cashea marquee — yellow bar with black text + Cashea logo separators */}
           <div className="bg-[#FFD700] py-2 overflow-hidden relative">
-            <div className="flex items-center whitespace-nowrap" style={{ animation: 'marquee-scroll 25s linear infinite' }}>
+            <div className="flex items-center whitespace-nowrap marquee-cashea">
               {[...Array(10)].map((_, i) => (
                 <span key={i} className="flex items-center gap-12 px-6">
                   <span className="text-xs sm:text-sm font-bold text-black tracking-[0.08em] uppercase">
