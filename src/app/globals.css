@@ -607,9 +607,9 @@ body {
   100% { transform: translateX(-25%); }
 }
 
-/* Cashea marquee — 30% faster on mobile (17.5s vs 25s desktop) */
+/* Cashea marquee — 40% faster on mobile (15s vs 25s desktop) */
 .marquee-cashea {
-  animation: marquee-scroll 17.5s linear infinite;
+  animation: marquee-scroll 15s linear infinite;
 }
 @media (min-width: 768px) {
   .marquee-cashea {
