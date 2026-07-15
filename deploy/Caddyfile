@@ -1,0 +1,21 @@
+# Reemplaza tienda.example.com por el dominio real.
+# Caddy gestiona TLS (Let's Encrypt) automáticamente.
+tienda.example.com {
+	encode zstd gzip
+
+	# Estáticos servidos directo desde disco (sin pasar por Node).
+	# /uploads es un symlink a /var/lib/n10k-store/uploads.
+	@static path /uploads/* /products/* /brand/* /banners/* /video/* /videos/* /logo.svg /favicon.ico /favicon-16x16.png /favicon-32x32.png /apple-touch-icon.png /manifest.json /robots.txt /pattern-n10k.png
+	handle @static {
+		root * /srv/n10k-store/current/public
+		header /uploads/* Cache-Control "public, max-age=31536000, immutable"
+		header /brand/* Cache-Control "public, max-age=31536000, immutable"
+		header /products/* Cache-Control "public, max-age=3600, stale-while-revalidate=86400"
+		file_server
+	}
+
+	# Todo lo demás → Next.js standalone
+	handle {
+		reverse_proxy localhost:3000
+	}
+}
