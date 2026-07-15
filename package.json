@@ -16,7 +16,8 @@
     "db:reset": "prisma migrate reset",
     "postinstall": "prisma generate",
     "db:seed": "npx tsx prisma/seed.ts",
-    "db:check-sizes": "node scripts/check-sizes.mjs"
+    "db:check-sizes": "node scripts/check-sizes.mjs",
+    "media:migrate": "npx tsx scripts/migrate-cloudinary-media.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
