@@ -1,25 +1,19 @@
 /**
- * Database initialization guard — ensures the database is always in a usable
- * state when the server starts.
+ * Database initialization guard — ensures the database is usable when the
+ * server starts.
  *
- * Problem this solves: in sandbox/cloud environments, the SQLite database
- * file (db/custom.db) can be deleted when the environment resets. The dev
- * server's startup script runs `prisma db push` (creates tables) but does
- * NOT run `prisma db seed` (populates data). This leaves the server running
- * with an empty database — no products, no admin user — causing 500 errors
- * on every API call.
- *
- * Solution: this function runs lazily on the first API request. It checks:
+ * Runs lazily on the first API request and checks:
  *   1. Can we connect to the database?
  *   2. Are there any products?
  *   3. Does an admin user exist?
- * If any check fails, it auto-seeds from static-products.ts and creates the
- * default admin. This ensures the server is ALWAYS usable, even after a
- * full filesystem reset.
+ * If the schema is missing it fails fast with instructions to run
+ * `prisma migrate deploy` (schema creation is a deploy-time concern).
+ * If the schema exists but is empty, it auto-seeds the catalog from
+ * static-products.ts and creates the default admin.
  *
  * IMPORTANT: if the database already has data, this function does NOTHING —
  * it never overwrites user changes (hidden products, edits, etc.). It only
- * seeds when the database is empty or missing.
+ * seeds when the database is empty.
  */
 
 import { db } from '@/lib/db';
