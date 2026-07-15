@@ -24,7 +24,15 @@ DATABASE_URL=postgresql://n10k:<PASSWORD_FUERTE>@localhost:5432/n10k_store
 EOF
 sudo chmod 600 /etc/n10k-store/env
 
-# systemd + Caddy
+# Checkout del repo (deploy.sh se ejecuta desde aquí, como usuario n10k)
+sudo -u n10k git clone https://github.com/N10k2026/n10k-store.git /srv/n10k-store/repo
+
+# Permitir al usuario n10k reiniciar el servicio sin password (lo usa deploy.sh)
+echo 'n10k ALL=(root) NOPASSWD: /usr/bin/systemctl restart n10k-store' | sudo tee /etc/sudoers.d/n10k-deploy
+sudo chmod 440 /etc/sudoers.d/n10k-deploy
+
+# systemd + Caddy (desde el checkout)
+cd /srv/n10k-store/repo
 sudo cp deploy/n10k-store.service /etc/systemd/system/
 sudo systemctl daemon-reload && sudo systemctl enable n10k-store
 sudo cp deploy/Caddyfile /etc/caddy/Caddyfile   # editar dominio real antes
@@ -35,6 +43,8 @@ sudo systemctl reload caddy
 
 La DB del VPS nace de cero: `prisma migrate deploy` sobre la base vacía
 (sin baselining) + seed del catálogo estático.
+
+Todo se ejecuta como usuario `n10k` desde `/srv/n10k-store/repo`.
 
 1. **Deploy inicial:** `bash deploy/deploy.sh` — aplica las migraciones sobre
    la DB vacía, hace el build y arranca el servicio.
@@ -63,8 +73,10 @@ Verificar después: `psql "$DATABASE_URL" -c "SELECT count(*) FROM \"Product\" W
 
 ## 3. Deploys siguientes
 
+Como usuario `n10k`:
+
 ```bash
-git pull && bash deploy/deploy.sh
+cd /srv/n10k-store/repo && git pull && bash deploy/deploy.sh
 ```
 
 ## 4. Backups

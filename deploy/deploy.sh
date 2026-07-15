@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Deploy de n10k-store al VPS. Ejecutar EN el VPS, en el checkout del repo.
+# Deploy de n10k-store al VPS. Ejecutar EN el VPS como usuario n10k, desde el
+# checkout del repo (/srv/n10k-store/repo). Requiere la regla sudoers
+# /etc/sudoers.d/n10k-deploy (ver docs/deploy/VPS.md, sección 1).
 # Requisitos: node, bun, ffmpeg, postgresql corriendo, /etc/n10k-store/env con DATABASE_URL.
 set -euo pipefail
 
