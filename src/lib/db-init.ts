@@ -26,26 +26,9 @@ import { db } from '@/lib/db';
 import { staticProducts } from '@/lib/static-products';
 import { hashPassword } from '@/lib/admin-session';
 import { devError } from '@/lib/dev-log';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
 
 let initialized = false;
 let initPromise: Promise<void> | null = null;
-
-/** Run `prisma db push` as a subprocess to create the schema. */
-async function runDbPush(): Promise<void> {
-  const cwd = process.cwd();
-  const env = { ...process.env, DATABASE_URL: process.env.DATABASE_URL || 'file:/home/z/my-project/db/custom.db' };
-  try {
-    await execAsync('npx prisma db push --skip-generate', { cwd, env, timeout: 30000 });
-    console.log('[ensureDatabase] Schema pushed successfully.');
-  } catch (err) {
-    devError('[ensureDatabase] Failed to push schema:', err);
-    throw err;
-  }
-}
 
 /** Check if the database has at least 1 product. */
 async function hasProducts(): Promise<boolean> {
@@ -162,16 +145,17 @@ export async function ensureDatabase(): Promise<void> {
     try {
       let [hasProds, hasAdminUser] = await Promise.all([hasProducts(), hasAdmin()]);
 
-      // If both checks failed (tables don't exist), push the schema first.
+      // If both checks failed, the schema itself may be missing. Schema
+      // creation is a deploy-time concern now (prisma migrate deploy) —
+      // never mutate the schema from request handlers.
       if (!hasProds && !hasAdminUser) {
-        // Try a direct query to see if it's a "table doesn't exist" error
         try {
           await db.product.count();
-        } catch {
-          console.log('[ensureDatabase] Database schema missing — running db push...');
-          await runDbPush();
-          // Re-check after schema creation
-          [hasProds, hasAdminUser] = await Promise.all([hasProducts(), hasAdmin()]);
+        } catch (err) {
+          throw new Error(
+            '[ensureDatabase] El schema de la base de datos no existe. Ejecuta: bunx prisma migrate deploy',
+            { cause: err },
+          );
         }
       }
 

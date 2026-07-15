@@ -5,11 +5,9 @@ import { versionMediaUrl, versionMediaUrls, versionColorImages } from '@/lib/med
 export function isStaticCatalogFallbackEnabled(): boolean {
   if (process.env.ALLOW_STATIC_CATALOG_FALLBACK === 'true') return true;
   if (process.env.ALLOW_STATIC_CATALOG_FALLBACK === 'false') return false;
-  if (process.env.NODE_ENV !== 'production') return true;
-  // SQLite file URLs cannot work on serverless hosts (e.g. Vercel).
-  const url = process.env.DATABASE_URL?.trim() ?? '';
-  if (!url || url.startsWith('file:')) return true;
-  return false;
+  // In production (VPS + local PostgreSQL) the DB is the source of truth;
+  // fall back to the static catalog only in development.
+  return process.env.NODE_ENV !== 'production';
 }
 
 /** Prisma / SQLite connection errors where a static fallback is reasonable. */
