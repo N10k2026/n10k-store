@@ -5,14 +5,18 @@
 ```bash
 # Paquetes
 sudo apt update
-sudo apt install -y postgresql caddy ffmpeg curl
-curl -fsSL https://bun.sh/install | bash          # bun
+sudo apt install -y postgresql caddy ffmpeg curl git
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt install -y nodejs
 
 # Usuario y directorios
 sudo useradd -r -m -s /bin/bash n10k
 sudo mkdir -p /srv/n10k-store/releases /var/lib/n10k-store/uploads/{images,videos} /etc/n10k-store
 sudo chown -R n10k:n10k /srv/n10k-store /var/lib/n10k-store
+
+# bun (para el usuario n10k, que es quien ejecuta deploy.sh)
+sudo -u n10k bash -c 'curl -fsSL https://bun.sh/install | bash'
+sudo ln -sf /home/n10k/.bun/bin/bun /usr/local/bin/bun
+sudo ln -sf /home/n10k/.bun/bin/bunx /usr/local/bin/bunx
 
 # PostgreSQL
 sudo -u postgres psql -c "CREATE USER n10k WITH PASSWORD '<PASSWORD_FUERTE>';"
@@ -44,7 +48,12 @@ sudo systemctl reload caddy
 La DB del VPS nace de cero: `prisma migrate deploy` sobre la base vacía
 (sin baselining) + seed del catálogo estático.
 
-Todo se ejecuta como usuario `n10k` desde `/srv/n10k-store/repo`.
+Todo se ejecuta como usuario `n10k` desde el checkout:
+
+```bash
+sudo -u n10k -i
+cd /srv/n10k-store/repo
+```
 
 1. **Deploy inicial:** `bash deploy/deploy.sh` — aplica las migraciones sobre
    la DB vacía, hace el build y arranca el servicio.
