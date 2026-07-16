@@ -3,6 +3,7 @@ import { spawn } from 'child_process';
 import { createHash } from 'crypto';
 import { mkdir, writeFile, stat, unlink } from 'fs/promises';
 import { existsSync } from 'fs';
+import { tmpdir } from 'os';
 import path from 'path';
 
 /**
@@ -148,8 +149,9 @@ export async function optimizeVideo(
     };
   }
 
-  // Write the uploaded buffer to a temp input file
-  const tempInput = path.join(UPLOADS_DIR, `temp-input-${hash}`);
+  // Write the uploaded buffer to a temp input file, outside the public
+  // uploads dir (which Caddy serves) so it's never web-reachable mid-transcode.
+  const tempInput = path.join(tmpdir(), `n10k-temp-input-${hash}`);
   await writeFile(tempInput, buffer);
 
   try {

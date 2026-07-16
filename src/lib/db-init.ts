@@ -137,7 +137,7 @@ export async function ensureDatabase(): Promise<void> {
 
   initPromise = (async () => {
     try {
-      let [hasProds, hasAdminUser] = await Promise.all([hasProducts(), hasAdmin()]);
+      const [hasProds, hasAdminUser] = await Promise.all([hasProducts(), hasAdmin()]);
 
       // If both checks failed, the schema itself may be missing. Schema
       // creation is a deploy-time concern now (prisma migrate deploy) —
