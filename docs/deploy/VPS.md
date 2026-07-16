@@ -26,7 +26,9 @@ sudo -u postgres psql -c "CREATE DATABASE n10k_store OWNER n10k;"
 sudo tee /etc/n10k-store/env >/dev/null <<'EOF'
 DATABASE_URL=postgresql://n10k:<PASSWORD_FUERTE>@localhost:5432/n10k_store
 EOF
-sudo chmod 600 /etc/n10k-store/env
+# Legible por el usuario n10k (deploy.sh hace `source` de este archivo)
+sudo chown root:n10k /etc/n10k-store/env
+sudo chmod 640 /etc/n10k-store/env
 
 # Checkout del repo (deploy.sh se ejecuta desde aquí, como usuario n10k)
 sudo -u n10k git clone https://github.com/N10k2026/n10k-store.git /srv/n10k-store/repo
@@ -39,7 +41,11 @@ sudo chmod 440 /etc/sudoers.d/n10k-deploy
 cd /srv/n10k-store/repo
 sudo cp deploy/n10k-store.service /etc/systemd/system/
 sudo systemctl daemon-reload && sudo systemctl enable n10k-store
-sudo cp deploy/Caddyfile /etc/caddy/Caddyfile   # editar dominio real antes
+sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
+# OBLIGATORIO antes del reload: editar el dominio real en /etc/caddy/Caddyfile
+# (por defecto trae tienda.example.com; con el placeholder, Caddy fallará al
+#  emitir el certificado TLS y la app quedará inaccesible por FQDN).
+sudo nano /etc/caddy/Caddyfile
 sudo systemctl reload caddy
 ```
 
