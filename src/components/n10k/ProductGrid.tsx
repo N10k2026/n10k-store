@@ -469,7 +469,7 @@ function ProductCard({
   colIndex?: number;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
+  const imageRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [heartAnimating, setHeartAnimating] = useState(false);
   const [parallaxStyle, setParallaxStyle] = useState({ transform: '' });
@@ -502,7 +502,7 @@ function ProductCard({
     if (currentImages.length <= 1) return;
     const interval = setInterval(() => {
       setActiveImageIndex((prev) => (prev + 1) % currentImages.length);
-    }, 3000);
+    }, 7000);
     return () => clearInterval(interval);
   }, [currentImages.length]);
 
@@ -581,19 +581,27 @@ function ProductCard({
         {/* Image Area with Zoom + Frosted Blur Effect */}
         <div className="relative aspect-[4/5] overflow-hidden rounded-t-[12px] sm:rounded-t-[24px]">
           {/* Primary image - zooms and blurs on hover, parallax on mouse move */}
-          <img
+          <div
             ref={imageRef}
-            key={`primary-${activeColor}-${safeImageIndex}`}
-            src={currentImages[safeImageIndex] || currentImages[0]}
-            alt={product.name}
-            loading="lazy"
-            decoding="async"
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className={`product-card-image product-card-parallax w-full h-full object-cover transition-opacity duration-500 ${
+            className={`product-card-parallax absolute inset-0 transition-opacity duration-500 ${
               hasVideo && isVideoHovering ? 'opacity-0' : ''
             }`}
             style={parallaxStyle}
-          />
+          >
+            {currentImages.map((imgSrc, imgLayer) => (
+              <img
+                key={`primary-${activeColor}-${imgLayer}`}
+                src={imgSrc}
+                alt={product.name}
+                loading={imgLayer === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className={`product-card-image absolute inset-0 w-full h-full object-cover transition-opacity duration-[2000ms] ease-in-out ${
+                  imgLayer === safeImageIndex ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+            ))}
+          </div>
 
           {/* Video layer - plays on hover */}
           {hasVideo && (
@@ -866,7 +874,7 @@ function ColorProductCard({
   colIndex?: number;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
+  const imageRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [heartAnimating, setHeartAnimating] = useState(false);
   const [parallaxStyle, setParallaxStyle] = useState({ transform: '' });
@@ -890,7 +898,7 @@ function ColorProductCard({
     if (images.length <= 1) return;
     const interval = setInterval(() => {
       setActiveImageIndex((prev) => (prev + 1) % images.length);
-    }, 3000);
+    }, 7000);
     return () => clearInterval(interval);
   }, [images.length]);
 
@@ -962,19 +970,27 @@ function ColorProductCard({
         {...longPress.handlers}
       >
         <div className="relative aspect-[4/5] overflow-hidden rounded-t-[12px] sm:rounded-t-[24px]">
-          <img
+          <div
             ref={imageRef}
-            key={`primary-${color.name}-${safeImageIndexColor}`}
-            src={images[safeImageIndexColor] || images[0]}
-            alt={`${product.name} — ${color.name}`}
-            loading="lazy"
-            decoding="async"
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className={`product-card-image product-card-parallax w-full h-full object-cover transition-opacity duration-500 ${
+            className={`product-card-parallax absolute inset-0 transition-opacity duration-500 ${
               hasVideo && isVideoHovering ? 'opacity-0' : ''
             }`}
             style={parallaxStyle}
-          />
+          >
+            {images.map((imgSrc, imgLayer) => (
+              <img
+                key={`primary-${color.name}-${imgLayer}`}
+                src={imgSrc}
+                alt={`${product.name} — ${color.name}`}
+                loading={imgLayer === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className={`product-card-image absolute inset-0 w-full h-full object-cover transition-opacity duration-[2000ms] ease-in-out ${
+                  imgLayer === safeImageIndexColor ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+            ))}
+          </div>
 
           {/* Video layer - plays on hover */}
           {hasVideo && (

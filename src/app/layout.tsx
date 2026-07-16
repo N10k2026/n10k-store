@@ -3,6 +3,7 @@ import { Montserrat } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import LoadingScreen from "@/components/n10k/LoadingScreen";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import {
   SITE_DESCRIPTION,
   SITE_LOCALE,
@@ -77,9 +78,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const gaId = process.env.NEXT_PUBLIC_GA_ID;
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        {gaId && <GoogleAnalytics gaId={gaId} />}
         <meta name="theme-color" content="#E30613" />
         {structuredData.map((data, index) => (
           <script
