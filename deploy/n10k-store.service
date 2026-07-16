@@ -1,0 +1,19 @@
+[Unit]
+Description=n10k-store (Next.js standalone)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=n10k
+WorkingDirectory=/srv/n10k-store/current
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOSTNAME=127.0.0.1
+EnvironmentFile=/etc/n10k-store/env
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
