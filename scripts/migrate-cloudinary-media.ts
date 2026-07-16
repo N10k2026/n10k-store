@@ -14,9 +14,6 @@
 import { PrismaClient } from '@prisma/client';
 import { optimizeImage, optimizeVideo } from '../src/lib/media-optimizer';
 
-const prisma = new PrismaClient();
-const DRY_RUN = process.argv.includes('--dry-run');
-
 export function isCloudinaryUrl(url: string | null | undefined): url is string {
   if (!url) return false;
   return /^https?:\/\/res\.cloudinary\.com\//.test(url);
@@ -27,99 +24,152 @@ export function isCloudinaryVideoUrl(url: string): boolean {
   return /\/video\/upload\//.test(withoutQuery) || /\.(mp4|webm|mov)$/i.test(withoutQuery);
 }
 
-/** Cache URL remota → URL local, para no descargar el mismo archivo dos veces. */
-const migrated = new Map<string, string>();
-const failures: string[] = [];
+/**
+ * Dependencias inyectables de la migración. En producción son PrismaClient,
+ * el `fetch` global y el pipeline local; en tests se sustituyen por mocks para
+ * ejercitar el flujo DB/descarga/reescritura sin red ni ffmpeg reales.
+ */
+export interface MigrateDeps {
+  prisma: Pick<PrismaClient, 'product' | 'productImage' | 'banner'>;
+  fetchFn: typeof fetch;
+  optimizeImage: (buffer: Buffer) => Promise<{ url: string; size: number }>;
+  optimizeVideo: (buffer: Buffer) => Promise<{ url: string; size: number }>;
+  dryRun: boolean;
+  log?: (msg: string) => void;
+  error?: (msg: string) => void;
+}
 
-async function migrateUrl(url: string): Promise<string | null> {
-  const cached = migrated.get(url);
+export interface MigrateResult {
+  updates: number;
+  migratedCount: number;
+  failures: string[];
+}
+
+async function migrateUrl(
+  url: string,
+  deps: MigrateDeps,
+  cache: Map<string, string>,
+  failures: string[],
+): Promise<string | null> {
+  const cached = cache.get(url);
   if (cached) return cached;
 
+  const log = deps.log ?? (() => {});
+  const error = deps.error ?? (() => {});
   try {
-    const res = await fetch(url);
+    const res = await deps.fetchFn(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const buffer = Buffer.from(await res.arrayBuffer());
 
     const result = isCloudinaryVideoUrl(url)
-      ? await optimizeVideo(buffer)
-      : await optimizeImage(buffer);
+      ? await deps.optimizeVideo(buffer)
+      : await deps.optimizeImage(buffer);
 
-    migrated.set(url, result.url);
-    console.log(`  OK  ${url}\n      → ${result.url} (${(result.size / 1024).toFixed(0)} KB)`);
+    cache.set(url, result.url);
+    log(`  OK  ${url}\n      → ${result.url} (${(result.size / 1024).toFixed(0)} KB)`);
     return result.url;
   } catch (err) {
     failures.push(`${url}: ${err instanceof Error ? err.message : String(err)}`);
-    console.error(`  FAIL ${url}`);
+    error(`  FAIL ${url}`);
     return null;
   }
 }
 
-async function main() {
-  console.log(DRY_RUN ? '=== DRY RUN (no se escribe en la DB) ===' : '=== Migrando media de Cloudinary ===');
+/**
+ * Ejecuta la migración completa contra las dependencias dadas. No toca
+ * `process` ni `console`; devuelve el resultado para que el caller decida el
+ * exit code y el logging.
+ */
+export async function runMigration(deps: MigrateDeps): Promise<MigrateResult> {
+  const log = deps.log ?? (() => {});
+  const error = deps.error ?? (() => {});
+  const cache = new Map<string, string>();
+  const failures: string[] = [];
   let updates = 0;
 
+  log(deps.dryRun ? '=== DRY RUN (no se escribe en la DB) ===' : '=== Migrando media de Cloudinary ===');
+
   // Product.image y Product.video
-  const products = await prisma.product.findMany({
+  const products = await deps.prisma.product.findMany({
     select: { id: true, slug: true, image: true, video: true },
   });
   for (const p of products) {
     const data: { image?: string; video?: string } = {};
     if (isCloudinaryUrl(p.image)) {
-      console.log(`Product ${p.slug} — image`);
-      const local = DRY_RUN ? '(dry-run)' : await migrateUrl(p.image);
-      if (local && !DRY_RUN) data.image = local;
+      log(`Product ${p.slug} — image`);
+      const local = deps.dryRun ? null : await migrateUrl(p.image, deps, cache, failures);
+      if (local) data.image = local;
     }
     if (isCloudinaryUrl(p.video)) {
-      console.log(`Product ${p.slug} — video`);
-      const local = DRY_RUN ? '(dry-run)' : await migrateUrl(p.video);
-      if (local && !DRY_RUN) data.video = local;
+      log(`Product ${p.slug} — video`);
+      const local = deps.dryRun ? null : await migrateUrl(p.video, deps, cache, failures);
+      if (local) data.video = local;
     }
     if (Object.keys(data).length > 0) {
-      await prisma.product.update({ where: { id: p.id }, data });
+      await deps.prisma.product.update({ where: { id: p.id }, data });
       updates++;
     }
   }
 
   // ProductImage.url
-  const images = await prisma.productImage.findMany({
+  const images = await deps.prisma.productImage.findMany({
     select: { id: true, url: true },
   });
   for (const img of images) {
     if (!isCloudinaryUrl(img.url)) continue;
-    console.log(`ProductImage ${img.id}`);
-    const local = DRY_RUN ? null : await migrateUrl(img.url);
+    log(`ProductImage ${img.id}`);
+    const local = deps.dryRun ? null : await migrateUrl(img.url, deps, cache, failures);
     if (local) {
-      await prisma.productImage.update({ where: { id: img.id }, data: { url: local } });
+      await deps.prisma.productImage.update({ where: { id: img.id }, data: { url: local } });
       updates++;
     }
   }
 
   // Banner.imageUrl
-  const banners = await prisma.banner.findMany({
+  const banners = await deps.prisma.banner.findMany({
     select: { id: true, title: true, imageUrl: true },
   });
   for (const b of banners) {
     if (!isCloudinaryUrl(b.imageUrl)) continue;
-    console.log(`Banner "${b.title}"`);
-    const local = DRY_RUN ? null : await migrateUrl(b.imageUrl);
+    log(`Banner "${b.title}"`);
+    const local = deps.dryRun ? null : await migrateUrl(b.imageUrl, deps, cache, failures);
     if (local) {
-      await prisma.banner.update({ where: { id: b.id }, data: { imageUrl: local } });
+      await deps.prisma.banner.update({ where: { id: b.id }, data: { imageUrl: local } });
       updates++;
     }
   }
 
-  console.log(`\nFilas actualizadas: ${updates}`);
-  console.log(`Archivos migrados: ${migrated.size}`);
+  log(`\nFilas actualizadas: ${updates}`);
+  log(`Archivos migrados: ${cache.size}`);
   if (failures.length > 0) {
-    console.error(`\nFALLOS (${failures.length}) — estas filas NO se tocaron:`);
-    for (const f of failures) console.error(`  ${f}`);
-    process.exitCode = 1;
+    error(`\nFALLOS (${failures.length}) — estas filas NO se tocaron:`);
+    for (const f of failures) error(`  ${f}`);
   }
+
+  return { updates, migratedCount: cache.size, failures };
 }
 
-// Solo ejecutar main() cuando se invoca como script (no al importarlo en tests).
+// Solo ejecutar como script (no al importarlo en tests).
 if (process.argv[1]?.includes('migrate-cloudinary-media')) {
-  main()
+  const prisma = new PrismaClient();
+  runMigration({
+    prisma,
+    fetchFn: fetch,
+    optimizeImage: async (buf) => {
+      const r = await optimizeImage(buf);
+      return { url: r.url, size: r.size };
+    },
+    optimizeVideo: async (buf) => {
+      const r = await optimizeVideo(buf);
+      return { url: r.url, size: r.size };
+    },
+    dryRun: process.argv.includes('--dry-run'),
+    log: (m) => console.log(m),
+    error: (m) => console.error(m),
+  })
+    .then((result) => {
+      if (result.failures.length > 0) process.exitCode = 1;
+    })
     .catch((err) => {
       console.error(err);
       process.exitCode = 1;
