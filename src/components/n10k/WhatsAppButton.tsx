@@ -70,7 +70,7 @@ export default function WhatsAppButton() {
     <div className="fixed bottom-20 sm:bottom-24 left-4 sm:left-6 z-40" data-whatsapp-btn>
       {/* Tooltip */}
       <div
-        className={`absolute bottom-full left-0 mb-3 px-3 py-2 bg-[#1A1A1A] border border-white/10 rounded-xl shadow-2xl shadow-black/50 whitespace-nowrap transition-all duration-500 pointer-events-none ${
+        className={`absolute bottom-full left-0 mb-3 px-3 py-2 bg-card border border-white/10 rounded-xl shadow-2xl shadow-black/50 whitespace-nowrap transition-all duration-500 pointer-events-none ${
           showTooltip
             ? 'opacity-100 translate-y-0'
             : 'opacity-0 translate-y-2'
@@ -79,7 +79,7 @@ export default function WhatsAppButton() {
         <p className="text-white text-xs font-bold">¿Necesitas ayuda?</p>
         <p className="text-white/50 text-[10px]">Escríbenos por WhatsApp</p>
         {/* Arrow */}
-        <div className="absolute -bottom-1.5 left-4 w-3 h-3 bg-[#1A1A1A] border-r border-b border-white/10 rotate-45" />
+        <div className="absolute -bottom-1.5 left-4 w-3 h-3 bg-card border-r border-b border-white/10 rotate-45" />
       </div>
 
       {/* Pulse ring */}

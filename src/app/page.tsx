@@ -189,7 +189,7 @@ export default function Home() {
           </DeferredSection>
 
           <div className="relative overflow-hidden">
-            <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-0 hidden dark:block">
               {!prefs.disablePlasma && (
                 <Plasma
                   color="#E30613"

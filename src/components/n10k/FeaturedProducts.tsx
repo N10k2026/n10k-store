@@ -138,7 +138,7 @@ export default function FeaturedProducts() {
                 onKeyDown={(e) => handleKeyboardClick(e, () => handleViewDetail(product, primaryColor))}
               >
                 {/* Image container with parallax-like hover effect */}
-                <div className="relative aspect-[3/4] rounded-2xl sm:rounded-3xl overflow-hidden bg-card border border-border group-hover:border-[#E30613]/30 transition-all duration-500 group-hover:shadow-xl group-hover:shadow-[#E30613]/10">
+                <div className="dark relative aspect-[3/4] rounded-2xl sm:rounded-3xl overflow-hidden bg-card border border-border group-hover:border-[#E30613]/30 transition-all duration-500 group-hover:shadow-xl group-hover:shadow-[#E30613]/10">
                   <img
                     src={images[0]}
                     alt={product.name}

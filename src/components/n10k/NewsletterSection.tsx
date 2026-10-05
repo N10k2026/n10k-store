@@ -71,7 +71,7 @@ export default function NewsletterSection() {
         </div>
       </div>
 
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#000000]/20 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-transparent" />
 
       <div className="max-w-2xl mx-auto text-center relative z-10">
         <div ref={cardRef} className="glass-card-pro p-4 sm:p-10 md:p-12">

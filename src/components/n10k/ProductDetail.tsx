@@ -325,7 +325,7 @@ export default function ProductDetail() {
 
   return (
     <Dialog open={isDetailOpen} onOpenChange={setDetailOpen}>
-      <DialogContent className="!max-w-6xl !w-[98vw] !h-[95vh] !flex !flex-col bg-[#000000]/98 backdrop-blur-xl border-white/10 !p-0 !gap-0 overflow-hidden rounded-3xl">
+      <DialogContent className="!max-w-6xl !w-[98vw] !h-[95vh] !flex !flex-col bg-background/98 backdrop-blur-xl border-white/10 !p-0 !gap-0 overflow-hidden rounded-3xl">
         <DialogTitle className="sr-only">{selectedProduct.name}</DialogTitle>
         <DialogDescription className="sr-only">{selectedProduct.description}</DialogDescription>
 
@@ -422,7 +422,7 @@ export default function ProductDetail() {
                 <Share2 className="h-4 w-4" />
               </button>
               {shareOpen && (
-                <div className="absolute right-0 top-full mt-2 bg-[#1A1A1A] border border-white/10 rounded-xl p-2 w-48 z-50 shadow-2xl shadow-black/50">
+                <div className="absolute right-0 top-full mt-2 bg-card border border-white/10 rounded-xl p-2 w-48 z-50 shadow-2xl shadow-black/50">
                   <button
                     onClick={() => { handleCopyLink(); setShareOpen(false); }}
                     className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
@@ -571,7 +571,7 @@ export default function ProductDetail() {
           </div>
 
           {/* Images */}
-          <div className="relative bg-[#0A0A0A]">
+          <div className="relative bg-background">
             {/* Main Image with long-press for description */}
             <div
               className="relative aspect-[4/5] overflow-hidden select-none"
@@ -617,7 +617,7 @@ export default function ProductDetail() {
                   showDescription ? 'opacity-100' : 'opacity-0'
                 }`}
               >
-                <div className="bg-gradient-to-t from-black/90 via-black/70 to-transparent pt-16 pb-6 px-5">
+                <div className="dark bg-gradient-to-t from-black/90 via-black/70 to-transparent pt-16 pb-6 px-5">
                   <p className="text-white text-xs leading-relaxed font-montserrat-medium">
                     {selectedProduct.description}
                   </p>
@@ -654,7 +654,7 @@ export default function ProductDetail() {
 
             {/* Thumbnail strip — always visible, includes video thumbnail */}
             {totalSlides > 1 && (
-              <div className="flex gap-2 px-3 py-2.5 bg-[#0A0A0A] overflow-x-auto justify-center">
+              <div className="flex gap-2 px-3 py-2.5 bg-background overflow-x-auto justify-center">
                 {/* Image thumbnails */}
                 {currentImages.map((img, idx) => (
                   <button
@@ -704,7 +704,7 @@ export default function ProductDetail() {
           </div>
 
           {/* Add to Cart — below images */}
-          <div className="p-4 bg-[#0A0A0A]">
+          <div className="p-4 bg-background">
             <Button
               className="w-full bg-[#E30613] hover:bg-[#ff2d34] text-white font-montserrat-bold text-sm py-4 rounded-2xl tracking-[0.06em] shadow-lg shadow-[#E30613]/25 transition-all duration-300 hover:scale-[1.02] whitespace-nowrap cursor-pointer"
               onClick={handleAddToCart}
@@ -717,7 +717,7 @@ export default function ProductDetail() {
 
           {/* Customers Also Viewed - Mobile */}
           {recommendedProducts.length > 0 && (
-            <div className="px-5 py-2 bg-[#0A0A0A] border-t border-white/5">
+            <div className="px-5 py-2 bg-background border-t border-white/5">
               <p className="text-[10px] font-montserrat-bold text-white/40 tracking-[0.12em] uppercase mb-2">
                 Porque te puede interesar
               </p>
@@ -731,7 +731,7 @@ export default function ProductDetail() {
                       setPreselectedColor(null);
                     }}
                   >
-                    <div className="relative aspect-[3/4] rounded-md overflow-hidden bg-[#1A1A1A] border border-white/5 group-hover:border-[#E30613]/30 transition-all duration-300">
+                    <div className="relative aspect-[3/4] rounded-md overflow-hidden bg-card border border-white/5 group-hover:border-[#E30613]/30 transition-all duration-300">
                       <img
                         src={rp.image}
                         alt={rp.name}
@@ -845,7 +845,7 @@ export default function ProductDetail() {
                     <Share2 className="h-4 w-4" />
                   </button>
                   {shareOpen && (
-                    <div className="absolute right-0 top-full mt-2 bg-[#1A1A1A] border border-white/10 rounded-xl p-2 w-48 z-50 shadow-2xl shadow-black/50">
+                    <div className="absolute right-0 top-full mt-2 bg-card border border-white/10 rounded-xl p-2 w-48 z-50 shadow-2xl shadow-black/50">
                       <button
                         onClick={() => { handleCopyLink(); setShareOpen(false); }}
                         className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
@@ -1013,7 +1013,7 @@ export default function ProductDetail() {
                 and the right column / image + add-to-cart gets the full height
                 of the dialog, the blue-rectangle area). */}
             {recommendedProducts.length > 0 && (
-              <div className="border-t border-white/5 bg-[#0A0A0A] -mx-6 md:-mx-8 px-6 md:px-8 py-3 mt-2">
+              <div className="border-t border-white/5 bg-background -mx-6 md:-mx-8 px-6 md:px-8 py-3 mt-2">
                 <p className="text-[10px] font-montserrat-bold text-white/40 tracking-[0.12em] uppercase mb-1.5">
                   Porque te puede interesar
                 </p>
@@ -1027,7 +1027,7 @@ export default function ProductDetail() {
                         setPreselectedColor(null);
                       }}
                     >
-                      <div className="relative aspect-[3/4] rounded-md overflow-hidden bg-[#1A1A1A] border border-white/5 group-hover:border-[#E30613]/30 transition-all duration-300">
+                      <div className="relative aspect-[3/4] rounded-md overflow-hidden bg-card border border-white/5 group-hover:border-[#E30613]/30 transition-all duration-300">
                         <img
                           src={rp.image}
                           alt={rp.name}
@@ -1050,7 +1050,7 @@ export default function ProductDetail() {
           </div>
 
           {/* RIGHT: Images + Add to Cart */}
-          <div className="md:w-[55%] flex flex-col h-full bg-[#0A0A0A]">
+          <div className="md:w-[55%] flex flex-col h-full bg-background">
             {/* Main Image / Video */}
             <div className="relative flex-1 min-h-0 overflow-hidden">
               {showingVideo ? (
@@ -1112,7 +1112,7 @@ export default function ProductDetail() {
 
             {/* Thumbnail strip — always visible, includes video thumbnail */}
             {totalSlides > 1 && (
-              <div className="flex gap-2 p-3 bg-[#0A0A0A] overflow-x-auto justify-center">
+              <div className="flex gap-2 p-3 bg-background overflow-x-auto justify-center">
                 {/* Image thumbnails */}
                 {currentImages.map((img, idx) => (
                   <button
@@ -1161,7 +1161,7 @@ export default function ProductDetail() {
             <div className="h-8 bg-gradient-to-b from-black/20 to-transparent pointer-events-none" />
 
             {/* Add to Cart — below images */}
-            <div className="p-5 bg-[#0A0A0A]">
+            <div className="p-5 bg-background">
               <Button
                 className="w-full bg-[#E30613] hover:bg-[#ff2d34] text-white font-montserrat-bold text-sm sm:text-base py-4 rounded-2xl tracking-[0.06em] shadow-lg shadow-[#E30613]/25 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[#E30613]/30 whitespace-nowrap cursor-pointer"
                 onClick={handleAddToCart}

@@ -118,7 +118,7 @@ export default function InteractiveBackground() {
     >
       <div
         ref={layer1Ref}
-        className="absolute inset-0"
+        className="absolute inset-0 hidden dark:block"
         style={{ willChange: prefs.disableBackgroundParallax ? undefined : 'transform' }}
       >
         <img
@@ -156,12 +156,12 @@ export default function InteractiveBackground() {
         }}
       />
 
-      <div className="absolute inset-0 bg-[#000000]/60" />
+      <div className="absolute inset-0 bg-[#000000]/60 hidden dark:block" />
 
       <div
         className="absolute inset-0"
         style={{
-          background: 'radial-gradient(ellipse at center, transparent 40%, rgba(10,10,10,0.8) 100%)',
+          background: 'radial-gradient(ellipse at center, transparent 40%, color-mix(in oklab, var(--background) 80%, transparent) 100%)',
         }}
       />
     </div>

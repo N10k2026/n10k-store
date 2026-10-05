@@ -250,7 +250,7 @@ const WishlistSidebar = function WishlistSidebar() {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-border p-6 space-y-4 bg-gradient-to-b from-[#0a0a0a] to-[#111111]">
+            <div className="border-t border-border p-6 space-y-4 bg-gradient-to-b from-background to-card">
               <Button
                 className="w-full bg-[#E30613] hover:bg-[#ff2d34] text-white font-black text-base py-6 rounded-none tracking-wider uppercase shadow-lg shadow-[#E30613]/20 btn-press transition-colors duration-300"
                 onClick={() => {

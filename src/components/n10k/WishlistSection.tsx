@@ -81,7 +81,7 @@ export default function WishlistSection() {
   if (wishlistEntries.length === 0) return null;
 
   return (
-    <div className="bg-[#0D0D0D] border-b border-white/[0.04] relative overflow-hidden">
+    <div className="bg-background border-b border-white/[0.04] relative overflow-hidden">
       {/* Subtle gradient accent */}
       <div className="absolute inset-0 bg-gradient-to-r from-[#E30613]/3 via-transparent to-[#E30613]/3 pointer-events-none" />
 

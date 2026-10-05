@@ -291,7 +291,7 @@ export default function ProductGrid() {
                       className={`category-pill px-4 sm:px-5 py-1.5 sm:py-2 text-[.65rem] sm:text-[.7rem] font-montserrat-semibold tracking-[.08em] uppercase transition-all duration-300 cursor-pointer border rounded-full inline-flex items-center gap-1.5 ${
                         activeCategory === cat
                           ? 'bg-[#E30613] border-[#E30613] text-white shadow-lg shadow-[#E30613]/30 active:scale-95'
-                          : 'bg-[#111] border-white/10 text-muted-foreground hover:text-foreground hover:border-white/20 active:scale-95'
+                          : 'bg-card border-white/10 text-muted-foreground hover:text-foreground hover:border-white/20 active:scale-95'
                       }`}
                       onClick={() => setActiveCategory(cat)}
                       aria-pressed={activeCategory === cat}

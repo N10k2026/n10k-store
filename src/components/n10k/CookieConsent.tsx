@@ -39,7 +39,7 @@ export default function CookieConsent() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[70] p-4 sm:p-6 animate-in slide-in-from-bottom-4 duration-500" role="region" aria-label="Consentimiento de cookies">
-      <div className="max-w-4xl mx-auto bg-[#111111] border border-white/10 rounded-2xl p-4 sm:p-6 shadow-2xl shadow-black/50 backdrop-blur-xl">
+      <div className="max-w-4xl mx-auto bg-card border border-white/10 rounded-2xl p-4 sm:p-6 shadow-2xl shadow-black/50 backdrop-blur-xl">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           {/* Icon + Text */}
           <div className="flex items-start gap-3 flex-1 min-w-0">

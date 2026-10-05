@@ -101,7 +101,7 @@ export default function RecentlyViewedSection() {
               onClick={() => handleProductClick(product)}
               className="rv-card flex-shrink-0 w-36 sm:w-44 group cursor-pointer text-left"
             >
-              <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-[#1A1A1A] border border-white/5 group-hover:border-[#E30613]/30 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-[#E30613]/10">
+              <div className="dark relative aspect-[3/4] rounded-xl overflow-hidden bg-card border border-white/5 group-hover:border-[#E30613]/30 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-[#E30613]/10">
                 <img
                   src={product.image}
                   alt={product.name}

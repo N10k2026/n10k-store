@@ -162,7 +162,7 @@ export default function LoadingScreen() {
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#000000]"
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#000000] dark"
       role="status"
       aria-live="polite"
       aria-busy="true"

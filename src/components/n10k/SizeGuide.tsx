@@ -18,7 +18,7 @@ const sizeData = [
 export default function SizeGuide({ isOpen, onClose }: SizeGuideProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg w-[95vw] bg-[#0D0D0D]/98 backdrop-blur-2xl border-white/10 p-0 overflow-hidden rounded-3xl">
+      <DialogContent className="max-w-lg w-[95vw] bg-background/98 backdrop-blur-2xl border-white/10 p-0 overflow-hidden rounded-3xl">
         <DialogTitle className="sr-only">Guía de tallas</DialogTitle>
         <DialogDescription className="sr-only">Tabla de medidas para ropa N10K</DialogDescription>
 

@@ -579,7 +579,7 @@ export default function ScrollVideoHero() {
     <section
       ref={sectionRef}
       id="scroll-video-hero"
-      className="relative w-full h-screen overflow-hidden bg-black"
+      className="dark relative w-full h-screen overflow-hidden bg-black"
     >
       {/* ── Mobile: Banner Carousel ── */}
       {useMobileBanners && <MobileBannerHero />}

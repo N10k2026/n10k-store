@@ -84,6 +84,12 @@ export default function RootLayout({
       <head>
         {gaId && <GoogleAnalytics gaId={gaId} />}
         <meta name="theme-color" content="#E30613" />
+        {/* Antes de pintar: tema guardado; el admin siempre oscuro */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(location.pathname.startsWith('/admin')||localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}`,
+          }}
+        />
         {structuredData.map((data, index) => (
           <script
             key={index}

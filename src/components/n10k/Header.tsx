@@ -6,6 +6,7 @@ import { useState, useEffect, useSyncExternalStore, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
+import ThemeToggle from './ThemeToggle';
 
 export default function Header() {
   // Zustand selectors — subscribe only to what we need
@@ -96,7 +97,7 @@ export default function Header() {
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
           ? 'bg-background/80 backdrop-blur-xl shadow-lg shadow-[#E30613]/5 border-b border-border/50'
-          : 'bg-transparent'
+          : 'bg-transparent dark'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -159,6 +160,8 @@ export default function Header() {
                 </span>
               )}
             </Button>
+
+            <ThemeToggle />
 
             {/* Cart */}
             <Button

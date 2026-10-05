@@ -103,7 +103,7 @@ export default function Footer() {
   }, []);
 
   return (
-    <footer ref={footerRef} id="contact" className="relative bg-[#E30613] pt-6 sm:pt-12 pb-2 sm:pb-6 px-4 sm:px-6 overflow-hidden">
+    <footer ref={footerRef} id="contact" className="dark relative bg-[#E30613] pt-6 sm:pt-12 pb-2 sm:pb-6 px-4 sm:px-6 overflow-hidden">
       {/* Animated gradient border at top - red to transparent */}
       <div className="absolute top-0 left-0 right-0 h-[3px] footer-gradient-top-border" />
 

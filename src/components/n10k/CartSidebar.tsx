@@ -225,7 +225,7 @@ const CartSidebar = function CartSidebar() {
             </div>
 
             {/* Summary */}
-            <div className="border-t border-border p-4 sm:p-6 space-y-4 bg-gradient-to-b from-[#0a0a0a] to-[#111111]">
+            <div className="border-t border-border p-4 sm:p-6 space-y-4 bg-gradient-to-b from-background to-card">
               {/* Delivery badge */}
               <div className="flex items-center gap-2 px-3 py-2 bg-[#25D366]/10 border border-[#25D366]/20 rounded-xl">
                 <Truck className="h-4 w-4 text-[#25D366]" />
