@@ -9,6 +9,7 @@ import { SplitWords, BlurIn } from '@/components/n10k/TextAnimations';
 import { gsap, ScrollTrigger } from '@/lib/gsap-init';
 import { toast } from '@/hooks/use-toast';
 import { useLongPressVideo } from '@/hooks/use-long-press-video';
+import { useSwipe } from '@/hooks/use-swipe';
 import { getFirstAvailableSize } from '@/lib/product-utils';
 import { handleKeyboardClick } from '@/lib/a11y-utils';
 
@@ -497,14 +498,25 @@ function ProductCard({
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const safeImageIndex = Math.min(activeImageIndex, Math.max(currentImages.length - 1, 0));
 
+  // Deslizar en móvil para cambiar de foto: desde el primer gesto manda el
+  // dedo (se apaga el auto-ciclo y el fundido pasa a ser rápido)
+  const [swiped, setSwiped] = useState(false);
+
   // Auto-cycle images
   useEffect(() => {
-    if (currentImages.length <= 1) return;
+    if (currentImages.length <= 1 || swiped) return;
     const interval = setInterval(() => {
       setActiveImageIndex((prev) => (prev + 1) % currentImages.length);
     }, 7000);
     return () => clearInterval(interval);
-  }, [currentImages.length]);
+  }, [currentImages.length, swiped]);
+
+  const swipeTo = (step: number) => {
+    if (currentImages.length <= 1) return;
+    setSwiped(true);
+    setActiveImageIndex((prev) => (Math.min(prev, currentImages.length - 1) + step + currentImages.length) % currentImages.length);
+  };
+  const swipe = useSwipe(() => swipeTo(-1), () => swipeTo(1));
 
   // GSAP entrance animation with stagger cascade offset
   useEffect(() => {
@@ -579,7 +591,7 @@ function ProductCard({
         {...longPress.handlers}
       >
         {/* Image Area with Zoom + Frosted Blur Effect */}
-        <div className="relative aspect-[4/5] overflow-hidden rounded-t-[12px] sm:rounded-t-[24px]">
+        <div className="relative aspect-[4/5] overflow-hidden rounded-t-[12px] sm:rounded-t-[24px] touch-pan-y" {...swipe}>
           {/* Primary image - zooms and blurs on hover, parallax on mouse move */}
           <div
             ref={imageRef}
@@ -596,7 +608,7 @@ function ProductCard({
                 loading={imgLayer === 0 ? 'eager' : 'lazy'}
                 decoding="async"
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                className={`product-card-image absolute inset-0 w-full h-full object-cover transition-opacity duration-[2000ms] ease-in-out ${
+                className={`product-card-image absolute inset-0 w-full h-full object-cover transition-opacity ${swiped ? 'duration-300' : 'duration-[2000ms]'} ease-in-out ${
                   imgLayer === safeImageIndex ? 'opacity-100' : 'opacity-0'
                 }`}
               />
@@ -893,14 +905,25 @@ function ColorProductCard({
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const safeImageIndexColor = Math.min(activeImageIndex, Math.max(images.length - 1, 0));
 
+  // Deslizar en móvil para cambiar de foto: desde el primer gesto manda el
+  // dedo (se apaga el auto-ciclo y el fundido pasa a ser rápido)
+  const [swiped, setSwiped] = useState(false);
+
   // Auto-cycle images
   useEffect(() => {
-    if (images.length <= 1) return;
+    if (images.length <= 1 || swiped) return;
     const interval = setInterval(() => {
       setActiveImageIndex((prev) => (prev + 1) % images.length);
     }, 7000);
     return () => clearInterval(interval);
-  }, [images.length]);
+  }, [images.length, swiped]);
+
+  const swipeTo = (step: number) => {
+    if (images.length <= 1) return;
+    setSwiped(true);
+    setActiveImageIndex((prev) => (Math.min(prev, images.length - 1) + step + images.length) % images.length);
+  };
+  const swipe = useSwipe(() => swipeTo(-1), () => swipeTo(1));
 
   useEffect(() => {
     if (!cardRef.current) return;
@@ -969,7 +992,7 @@ function ColorProductCard({
         onMouseLeave={() => { handleParallaxLeave(); setIsVideoHovering(false); }}
         {...longPress.handlers}
       >
-        <div className="relative aspect-[4/5] overflow-hidden rounded-t-[12px] sm:rounded-t-[24px]">
+        <div className="relative aspect-[4/5] overflow-hidden rounded-t-[12px] sm:rounded-t-[24px] touch-pan-y" {...swipe}>
           <div
             ref={imageRef}
             className={`product-card-parallax absolute inset-0 transition-opacity duration-500 ${
@@ -985,7 +1008,7 @@ function ColorProductCard({
                 loading={imgLayer === 0 ? 'eager' : 'lazy'}
                 decoding="async"
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                className={`product-card-image absolute inset-0 w-full h-full object-cover transition-opacity duration-[2000ms] ease-in-out ${
+                className={`product-card-image absolute inset-0 w-full h-full object-cover transition-opacity ${swiped ? 'duration-300' : 'duration-[2000ms]'} ease-in-out ${
                   imgLayer === safeImageIndexColor ? 'opacity-100' : 'opacity-0'
                 }`}
               />

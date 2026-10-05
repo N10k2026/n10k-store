@@ -1,6 +1,7 @@
 'use client';
 
 import { useCartStore, categories } from '@/lib/store';
+import { useSwipe } from '@/hooks/use-swipe';
 import { sortColorsByWarmth } from '@/lib/color-sort';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -277,6 +278,9 @@ export default function ProductDetail() {
       setActiveSlideIndex((prev) => (prev < maxIdx ? prev + 1 : 0));
     }
   };
+
+  // Deslizar en móvil para pasar de foto
+  const swipe = useSwipe(() => navigateSlide('prev'), () => navigateSlide('next'));
 
   // Keyboard navigation for gallery
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -574,9 +578,9 @@ export default function ProductDetail() {
           <div className="relative bg-background">
             {/* Main Image with long-press for description */}
             <div
-              className="relative aspect-[4/5] overflow-hidden select-none"
-              onTouchStart={handleTouchStart}
-              onTouchEnd={handleTouchEnd}
+              className="relative aspect-[4/5] overflow-hidden select-none touch-pan-y"
+              onTouchStart={(e) => { handleTouchStart(); swipe.onTouchStart(e); }}
+              onTouchEnd={(e) => { handleTouchEnd(); swipe.onTouchEnd(e); }}
               onTouchCancel={handleTouchEnd}
               onMouseDown={handleMouseDown}
               onMouseUp={handleMouseUp}
